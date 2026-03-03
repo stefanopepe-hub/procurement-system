@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: procurement_db
+      POSTGRES_USER: procurement
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_in_production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U procurement -d procurement_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  backend:
+    build: ./backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://procurement:${DB_PASSWORD:-changeme_in_production}@db:5432/procurement_db
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_this_jwt_secret_in_production}
+      SECRET_KEY: ${SECRET_KEY:-change_this_secret_in_production}
+      DEBUG: "false"
+      SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-noreply@telethon.it}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_TLS: "true"
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@telethon.it}
+      EMAIL_ALBO_FORNITORI: ${EMAIL_ALBO_FORNITORI:-albofornitori@telethon.it}
+      UPLOAD_DIR: /app/uploads
+      ALLOWED_ORIGINS: '["http://localhost:80","https://procurement.telethon.it"]'
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    expose:
+      - "8000"
+
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "${PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  internal:
+    driver: bridge
