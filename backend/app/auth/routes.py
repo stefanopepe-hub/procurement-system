@@ -174,3 +174,22 @@ def change_password(
     db.commit()
     log_action(db, current_user.id, "CHANGE_PASSWORD", "auth", str(current_user.id))
     return {"message": "Password changed successfully"}
+
+
+@router.post("/bootstrap", status_code=201, tags=["Authentication"])
+def bootstrap_admin(db: Session = Depends(get_db)):
+    """Crea il primo super admin. Funziona solo se non esistono utenti."""
+    if db.query(User).count() > 0:
+        raise HTTPException(status_code=403, detail="Bootstrap already done")
+    user = User(
+        email="admin@procurement.it",
+        username="admin",
+        full_name="Administrator",
+        hashed_password=get_password_hash("Admin123456!"),
+        role=UserRole.SUPER_ADMIN,
+        is_active=True,
+        is_verified=True,
+    )
+    db.add(user)
+    db.commit()
+    return {"message": "Admin created", "username": "admin", "password": "Admin123456!"}
