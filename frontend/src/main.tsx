@@ -18,6 +18,7 @@ import { VendorRatingDashboard } from './pages/vendor_rating/VendorRatingDashboa
 import { SupplierRatingDetail } from './pages/vendor_rating/SupplierRatingDetail'
 import { SurveyPage } from './pages/vendor_rating/SurveyPage'
 import { useAuthStore, isAdmin } from './store/auth'
+import ErrorBoundary from './components/ErrorBoundary'
 
 dayjs.locale('it')
 
@@ -88,9 +89,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       }}
     >
       <AntApp>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ErrorBoundary>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ErrorBoundary>
       </AntApp>
     </ConfigProvider>
   </React.StrictMode>

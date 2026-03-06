@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, status
+from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -84,6 +85,36 @@ async def security_headers(request: Request, call_next):
     if not settings.DEBUG:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error(f"Unhandled error on {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Errore interno del server. Riprova più tardi."}
+    )
+
+
+@app.get("/health", tags=["system"])
+async def health_check():
+    from datetime import datetime
+    try:
+        from .database import engine
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
+    return {
+        "status": "healthy" if db_status == "connected" else "degraded",
+        "version": "1.0.0",
+        "db": db_status,
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 
 # --- Routers ---
