@@ -19,6 +19,7 @@ import { SupplierRatingDetail } from './pages/vendor_rating/SupplierRatingDetail
 import { SurveyPage } from './pages/vendor_rating/SurveyPage'
 import { useAuthStore, isAdmin } from './store/auth'
 import ErrorBoundary from './components/ErrorBoundary'
+import './index.css'
 
 dayjs.locale('it')
 
@@ -82,9 +83,16 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       locale={itIT}
       theme={{
         token: {
-          colorPrimary: '#1677ff',
+          colorPrimary: '#1a3a5c',
+          colorSuccess: '#389e0d',
+          colorWarning: '#d48806',
+          colorError: '#cf1322',
           borderRadius: 6,
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        },
+        components: {
+          Layout: { siderBg: '#1a3a5c', triggerBg: '#132d47' },
+          Menu: { darkItemBg: '#1a3a5c', darkSubMenuItemBg: '#132d47' },
         },
       }}
     >

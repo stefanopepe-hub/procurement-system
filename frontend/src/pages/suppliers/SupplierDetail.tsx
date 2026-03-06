@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import {
   Tabs, Card, Descriptions, Tag, Table, Button, Typography, Space,
-  Spin, Alert, Badge, Divider, message, Row, Col, Statistic
+  Spin, Alert, Badge, Divider, message, Row, Col, Statistic, Modal, Select, Form as AntForm
 } from 'antd'
 import {
   ArrowLeftOutlined, EditOutlined, FileTextOutlined,
-  TeamOutlined, ShoppingOutlined, MailOutlined, SafetyOutlined
+  TeamOutlined, ShoppingOutlined, MailOutlined, SafetyOutlined, UploadOutlined
 } from '@ant-design/icons'
+import { Upload } from 'antd'
+import DatePicker from 'antd/es/date-picker'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { suppliersApi } from '../../services/api'
 import type { SupplierDetail as SupplierDetailType } from '../../types'
@@ -37,6 +39,9 @@ export const SupplierDetail: React.FC = () => {
   const [supplier, setSupplier] = useState<SupplierDetailType | null>(null)
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [uploadModal, setUploadModal] = useState(false)
+  const [uploadForm] = AntForm.useForm()
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -56,6 +61,35 @@ export const SupplierDetail: React.FC = () => {
     }
     load()
   }, [id])
+
+  const reloadSupplier = async () => {
+    try {
+      const res = await suppliersApi.get(Number(id))
+      setSupplier(res.data)
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleUpload = async (values: any, file: File) => {
+    setUploading(true)
+    try {
+      await suppliersApi.uploadDocument(
+        Number(id),
+        values.tipo,
+        file,
+        values.data_scadenza?.format('YYYY-MM-DD')
+      )
+      message.success('Documento caricato con successo')
+      setUploadModal(false)
+      uploadForm.resetFields()
+      await reloadSupplier()
+    } catch {
+      message.error('Errore nel caricamento del documento')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
   if (!supplier) return <Alert type="error" message="Fornitore non trovato" />
@@ -189,6 +223,11 @@ export const SupplierDetail: React.FC = () => {
             />
 
             <Divider>Documenti Societari</Divider>
+            <Space style={{ marginBottom: 12 }}>
+              <Button icon={<UploadOutlined />} onClick={() => setUploadModal(true)}>
+                Carica Documento
+              </Button>
+            </Space>
             <Table
               dataSource={supplier.documents}
               rowKey="id"
@@ -204,6 +243,41 @@ export const SupplierDetail: React.FC = () => {
                   render: (v) => new Date(v).toLocaleDateString('it-IT') },
               ]}
             />
+
+            <Modal
+              title="Carica Documento"
+              open={uploadModal}
+              onCancel={() => { setUploadModal(false); uploadForm.resetFields() }}
+              footer={null}
+            >
+              <AntForm form={uploadForm} layout="vertical">
+                <AntForm.Item name="tipo" label="Tipo Documento" rules={[{ required: true, message: 'Seleziona il tipo di documento' }]}>
+                  <Select options={[
+                    { value: 'DURC', label: 'DURC' },
+                    { value: 'Visura Camerale', label: 'Visura Camerale' },
+                    { value: 'ISO 9001', label: 'Certificazione ISO 9001' },
+                    { value: 'Polizza RC', label: 'Polizza RC' },
+                    { value: 'DUVRI', label: 'DUVRI' },
+                    { value: 'Altro', label: 'Altro' },
+                  ]} />
+                </AntForm.Item>
+                <AntForm.Item name="data_scadenza" label="Data Scadenza">
+                  <DatePicker style={{ width: '100%' }} />
+                </AntForm.Item>
+                <Upload
+                  beforeUpload={(file) => {
+                    uploadForm.validateFields().then(values => handleUpload(values, file))
+                    return false
+                  }}
+                  accept=".pdf,.doc,.docx,.jpg,.png"
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />} loading={uploading} type="primary">
+                    Seleziona e Carica File
+                  </Button>
+                </Upload>
+              </AntForm>
+            </Modal>
           </Card>
         ),
       },
