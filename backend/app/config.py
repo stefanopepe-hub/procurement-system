@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     SECRET_KEY: str = secrets.token_urlsafe(32)
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80", "https://believable-stillness-production-466d.up.railway.app"]
 
     # Database
     DATABASE_URL: str = "postgresql://procurement:procurement@db:5432/procurement_db"
