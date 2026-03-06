@@ -32,6 +32,11 @@ export const AppLayout: React.FC = () => {
 
   const menuItems = [
     {
+      key: '/',
+      icon: <DashboardOutlined />,
+      label: 'Dashboard',
+    },
+    {
       key: '/suppliers',
       icon: <TeamOutlined />,
       label: 'Albo Fornitori',
@@ -79,7 +84,7 @@ export const AppLayout: React.FC = () => {
         trigger={null}
         collapsible
         collapsed={collapsed}
-        style={{ background: '#001529' }}
+        style={{ background: '#1a3a5c' }}
         width={220}
       >
         <div style={{
@@ -89,7 +94,7 @@ export const AppLayout: React.FC = () => {
           marginBottom: 8,
           transition: 'padding 0.2s',
         }}>
-          <DashboardOutlined style={{ color: '#1677ff', fontSize: 20 }} />
+          <DashboardOutlined style={{ color: '#4a9eff', fontSize: 20 }} />
           {!collapsed && (
             <Text style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
               Procurement
@@ -122,7 +127,7 @@ export const AppLayout: React.FC = () => {
             </Tag>
             <Dropdown menu={userMenu} trigger={['click']}>
               <Space style={{ cursor: 'pointer' }}>
-                <Avatar icon={<UserOutlined />} style={{ background: '#1677ff' }} />
+                <Avatar icon={<UserOutlined />} style={{ background: '#1a3a5c' }} />
                 <Text>{user?.full_name}</Text>
               </Space>
             </Dropdown>
