@@ -17,6 +17,7 @@ import { ContractForm } from './pages/contracts/ContractForm'
 import { VendorRatingDashboard } from './pages/vendor_rating/VendorRatingDashboard'
 import { SupplierRatingDetail } from './pages/vendor_rating/SupplierRatingDetail'
 import { SurveyPage } from './pages/vendor_rating/SurveyPage'
+import Dashboard from './pages/Dashboard'
 import { useAuthStore, isAdmin } from './store/auth'
 import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
@@ -37,7 +38,7 @@ function AppRoutes() {
       <Route path="/survey/:token" element={<SurveyPage />} />
 
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="/suppliers" replace />} />
+        <Route index element={<Dashboard />} />
 
         {/* Albo Fornitori – tutti gli utenti */}
         <Route path="suppliers" element={<SupplierList />} />
