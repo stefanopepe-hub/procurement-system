@@ -18,15 +18,25 @@ import { VendorRatingDashboard } from './pages/vendor_rating/VendorRatingDashboa
 import { SupplierRatingDetail } from './pages/vendor_rating/SupplierRatingDetail'
 import { SurveyPage } from './pages/vendor_rating/SurveyPage'
 import Dashboard from './pages/Dashboard'
+import AdminPanel from './pages/AdminPanel'
 import { useAuthStore, isAdmin } from './store/auth'
 import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
 
 dayjs.locale('it')
 
-function ProtectedRoute({ children, adminOnly }: { children: React.ReactNode; adminOnly?: boolean }) {
+function ProtectedRoute({
+  children,
+  adminOnly,
+  superAdminOnly,
+}: {
+  children: React.ReactNode
+  adminOnly?: boolean
+  superAdminOnly?: boolean
+}) {
   const { isAuthenticated, user } = useAuthStore()
   if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (superAdminOnly && user?.role !== 'super_admin') return <Navigate to="/" replace />
   if (adminOnly && !isAdmin(user)) return <Navigate to="/suppliers" replace />
   return <>{children}</>
 }
@@ -70,6 +80,11 @@ function AppRoutes() {
         } />
         <Route path="vendor-rating/supplier/:supplier_id" element={
           <ProtectedRoute adminOnly><SupplierRatingDetail /></ProtectedRoute>
+        } />
+
+        {/* Admin Panel – solo super_admin */}
+        <Route path="admin" element={
+          <ProtectedRoute superAdminOnly><AdminPanel /></ProtectedRoute>
         } />
       </Route>
 
