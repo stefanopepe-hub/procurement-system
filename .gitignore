@@ -10,3 +10,5 @@ uploads/
 .venv/
 venv/
 *.db
+# Documenti PDF generati per test (non committare)
+backend/test_documents/

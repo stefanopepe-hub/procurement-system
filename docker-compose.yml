@@ -1,6 +1,18 @@
 version: "3.9"
 
 services:
+  # ── Email testing locale (Mailhog) ──────────────────────────────────────────
+  # Interfaccia web: http://localhost:8025
+  # SMTP: mailhog:1025 (usare in SMTP_HOST per il backend)
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    networks:
+      - internal
+
   db:
     image: postgres:16-alpine
     restart: always
@@ -26,12 +38,14 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_this_jwt_secret_in_production}
       SECRET_KEY: ${SECRET_KEY:-change_this_secret_in_production}
       DEBUG: "false"
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      # Per test locale usare Mailhog (porta 1025, no TLS, no auth)
+      # Per produzione sovrascrivere con le variabili SMTP reali
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
-      SMTP_TLS: "true"
+      SMTP_TLS: ${SMTP_TLS:-false}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@telethon.it}
       EMAIL_ALBO_FORNITORI: ${EMAIL_ALBO_FORNITORI:-albofornitori@telethon.it}
       UPLOAD_DIR: /app/uploads
@@ -41,6 +55,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     networks:
       - internal
     expose:

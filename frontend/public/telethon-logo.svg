@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" fill="none">
+  <!-- Cuore Telethon -->
+  <path d="M28 42 C28 42 12 32 12 22 C12 16 16.5 12 22 12 C24.8 12 27.3 13.2 29 15.1 C30.7 13.2 33.2 12 36 12 C41.5 12 46 16 46 22 C46 32 30 42 28 42Z" fill="#E31837"/>
+  <!-- Testo TELETHON -->
+  <text x="56" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="18" fill="#1a3a5c" letter-spacing="1">TELETHON</text>
+  <!-- Sottotitolo -->
+  <text x="56" y="44" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="9" fill="#666" letter-spacing="2">FONDAZIONE</text>
+  <!-- Linea decorativa -->
+  <rect x="56" y="48" width="120" height="1.5" fill="#E31837" rx="1"/>
+</svg>

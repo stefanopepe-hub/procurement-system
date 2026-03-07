@@ -176,17 +176,26 @@ export const AppLayout: React.FC = () => {
         width={220}
       >
         <div style={{
-          padding: collapsed ? '16px 8px' : '16px 24px',
-          display: 'flex', alignItems: 'center', gap: 8,
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          marginBottom: 8,
+          padding: collapsed ? '14px 8px' : '14px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start',
+          borderBottom: '1px solid rgba(255,255,255,0.12)',
+          marginBottom: 4,
           transition: 'padding 0.2s',
+          minHeight: 64,
         }}>
-          <DashboardOutlined style={{ color: '#4a9eff', fontSize: 20 }} />
-          {!collapsed && (
-            <Text style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
-              Procurement
-            </Text>
+          {collapsed ? (
+            <div style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: '#E31837', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ color: '#fff', fontWeight: 900, fontSize: 16 }}>T</span>
+            </div>
+          ) : (
+            <img
+              src="/telethon-logo.svg"
+              alt="Fondazione Telethon"
+              style={{ height: 36, filter: 'brightness(0) invert(1)', opacity: 0.92 }}
+            />
           )}
         </div>
         <Menu
