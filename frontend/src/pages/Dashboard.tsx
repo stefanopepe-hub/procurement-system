@@ -6,7 +6,7 @@ import {
 import {
   TeamOutlined, FileTextOutlined, StarOutlined, WarningOutlined,
   ClockCircleOutlined, PlusOutlined, CheckCircleOutlined,
-  ExclamationCircleOutlined, LinkOutlined, UserOutlined,
+  ExclamationCircleOutlined, LinkOutlined, UserOutlined, BellFilled,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -20,6 +20,15 @@ dayjs.extend(relativeTime);
 const { Title, Text } = Typography;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
+
+interface PendingRatingRequest {
+  supplier_id: number;
+  ragione_sociale: string;
+  requested_at: string | null;
+  expires_at: string | null;
+  tipo: string | null;
+  request_id: number;
+}
 
 interface AuditEntry {
   id: number;
@@ -519,6 +528,126 @@ const QuickActions: React.FC<{ isAdminUser: boolean }> = ({ isAdminUser }) => {
   );
 };
 
+// ─── Pending Ratings Alert ───────────────────────────────────────────────────
+
+const PendingRatingsAlert: React.FC<{
+  requests: PendingRatingRequest[];
+  total: number;
+  loading: boolean;
+}> = ({ requests, total, loading }) => {
+  const navigate = useNavigate();
+
+  if (loading || total === 0) return null;
+
+  const shown = requests.slice(0, 5);
+
+  return (
+    <Card
+      style={{
+        marginBottom: 24,
+        background: 'linear-gradient(135deg, #fffbe6 0%, #fff7d6 100%)',
+        border: '1px solid #faad14',
+        borderRadius: 8,
+        boxShadow: '0 2px 8px rgba(250,173,20,0.15)',
+      }}
+      styles={{ body: { padding: '16px 20px' } }}
+    >
+      <Space align="start" style={{ width: '100%' }}>
+        <BellFilled style={{ fontSize: 22, color: '#d48806', marginTop: 2, flexShrink: 0 }} />
+        <div style={{ flex: 1, width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Space>
+              <Typography.Text strong style={{ fontSize: 16, color: '#7c5800' }}>
+                Valutazioni fornitori in attesa
+              </Typography.Text>
+              <Badge
+                count={total}
+                style={{ backgroundColor: '#d48806' }}
+              />
+            </Space>
+            {total > 5 && (
+              <Button
+                type="link"
+                size="small"
+                style={{ color: '#d48806', padding: 0 }}
+                onClick={() => navigate('/vendor-rating')}
+              >
+                Vedi tutte ({total})
+              </Button>
+            )}
+          </div>
+          <List
+            size="small"
+            dataSource={shown}
+            renderItem={(r) => {
+              const daysLeft = r.expires_at
+                ? dayjs(r.expires_at).diff(dayjs(), 'day')
+                : null;
+              const isUrgent = daysLeft !== null && daysLeft <= 7;
+              return (
+                <List.Item
+                  key={r.request_id}
+                  style={{
+                    paddingLeft: 0,
+                    paddingRight: 0,
+                    borderBottom: '1px solid rgba(250,173,20,0.2)',
+                  }}
+                  actions={[
+                    <Button
+                      key="rate"
+                      type="primary"
+                      size="small"
+                      icon={<StarOutlined />}
+                      onClick={() => navigate(`/vendor-rating/supplier/${r.supplier_id}`)}
+                      style={{
+                        background: '#d48806',
+                        borderColor: '#d48806',
+                        fontSize: 12,
+                      }}
+                    >
+                      Valuta ora
+                    </Button>,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Space size={6}>
+                        <Typography.Text strong style={{ fontSize: 13 }}>
+                          {r.ragione_sociale}
+                        </Typography.Text>
+                        {r.tipo && (
+                          <Tag style={{ fontSize: 10, margin: 0 }}>{r.tipo}</Tag>
+                        )}
+                      </Space>
+                    }
+                    description={
+                      <Space size={12} style={{ fontSize: 11, color: '#7c5800' }}>
+                        <span>
+                          Richiesta il{' '}
+                          {r.requested_at ? dayjs(r.requested_at).format('DD/MM/YYYY') : '—'}
+                        </span>
+                        {daysLeft !== null && (
+                          <span style={{ color: isUrgent ? '#cf1322' : '#d48806', fontWeight: 600 }}>
+                            {isUrgent ? (
+                              <><WarningOutlined /> {daysLeft}gg rimasti (urgente)</>
+                            ) : (
+                              <>{daysLeft}gg rimasti</>
+                            )}
+                          </span>
+                        )}
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+          />
+        </div>
+      </Space>
+    </Card>
+  );
+};
+
 // ─── Main Dashboard ──────────────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
@@ -563,6 +692,11 @@ const Dashboard: React.FC = () => {
   // Audit log
   const [auditLoading, setAuditLoading] = useState(true);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+
+  // Pending vendor ratings
+  const [pendingRatingLoading, setPendingRatingLoading] = useState(true);
+  const [pendingRatingTotal, setPendingRatingTotal] = useState(0);
+  const [pendingRatingRequests, setPendingRatingRequests] = useState<PendingRatingRequest[]>([]);
 
   const loadKpi = useCallback(async () => {
     setKpiLoading(true);
@@ -712,6 +846,26 @@ const Dashboard: React.FC = () => {
     }
   }, [isSuperAdmin]);
 
+  const loadPendingRatings = useCallback(async () => {
+    if (!adminUser) {
+      setPendingRatingLoading(false);
+      return;
+    }
+    setPendingRatingLoading(true);
+    try {
+      const res = await vendorRatingApi.pendingCount();
+      const data = res.data;
+      setPendingRatingTotal(data.pending ?? 0);
+      setPendingRatingRequests(data.requests ?? []);
+    } catch {
+      // silently ignore
+      setPendingRatingTotal(0);
+      setPendingRatingRequests([]);
+    } finally {
+      setPendingRatingLoading(false);
+    }
+  }, [adminUser]);
+
   useEffect(() => {
     loadKpi();
     loadExpiringContracts();
@@ -719,11 +873,21 @@ const Dashboard: React.FC = () => {
     loadSemaforo();
     loadSuppliers();
     loadAuditLog();
-  }, [loadKpi, loadExpiringContracts, loadContractCounts, loadSemaforo, loadSuppliers, loadAuditLog]);
+    loadPendingRatings();
+  }, [loadKpi, loadExpiringContracts, loadContractCounts, loadSemaforo, loadSuppliers, loadAuditLog, loadPendingRatings]);
 
   return (
     <div>
       <Title level={3} style={{ marginBottom: 24 }}>Dashboard</Title>
+
+      {/* Pending Vendor Ratings Alert — stile Amazon */}
+      {adminUser && (
+        <PendingRatingsAlert
+          requests={pendingRatingRequests}
+          total={pendingRatingTotal}
+          loading={pendingRatingLoading}
+        />
+      )}
 
       {/* KPI Cards */}
       <KpiCards stats={kpiStats} loading={kpiLoading} />

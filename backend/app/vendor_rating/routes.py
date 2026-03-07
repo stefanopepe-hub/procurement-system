@@ -553,6 +553,42 @@ def list_nc(
     return {"items": items, "total": total, "page": page, "limit": limit}
 
 
+@router.get("/pending-count")
+def pending_count(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Restituisce il conteggio delle survey pending (non completate e non scadute)
+    e le ultime 10 richieste per il dropdown notifiche.
+    """
+    now = datetime.now(timezone.utc)
+    pending_q = (
+        db.query(VendorRatingRequest)
+        .filter(
+            VendorRatingRequest.survey_completed_at.is_(None),
+            VendorRatingRequest.survey_expired == False,
+            VendorRatingRequest.survey_expires_at > now,
+        )
+        .order_by(VendorRatingRequest.created_at.desc())
+    )
+    total = pending_q.count()
+    requests_raw = pending_q.limit(10).all()
+    requests = []
+    for r in requests_raw:
+        supplier = db.query(Supplier).filter(Supplier.id == r.supplier_id).first()
+        ragione_sociale = supplier.ragione_sociale if supplier else f"Fornitore #{r.supplier_id}"
+        requests.append({
+            "supplier_id": r.supplier_id,
+            "ragione_sociale": ragione_sociale,
+            "requested_at": r.created_at.isoformat() if r.created_at else None,
+            "expires_at": r.survey_expires_at.isoformat() if r.survey_expires_at else None,
+            "tipo": r.tipo_trigger.value if r.tipo_trigger else None,
+            "request_id": r.id,
+        })
+    return {"pending": total, "requests": requests}
+
+
 @router.post("/requests", status_code=201)
 def create_rating_request(
     data: RatingRequestCreate,

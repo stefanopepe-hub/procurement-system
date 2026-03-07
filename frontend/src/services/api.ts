@@ -135,6 +135,7 @@ export const vendorRatingApi = {
   createUaReview: (supplierId: number, data: object) =>
     api.post(`/vendor-rating/supplier/${supplierId}/ua-reviews`, data),
   listNc: (params?: object) => api.get('/vendor-rating/non-conformita', { params }),
+  pendingCount: () => api.get('/vendor-rating/pending-count'),
 }
 
 // ---- Non Conformità ----
