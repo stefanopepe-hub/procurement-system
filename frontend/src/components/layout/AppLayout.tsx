@@ -3,7 +3,7 @@ import { Layout, Menu, Avatar, Dropdown, Button, Space, Typography, Tag } from '
 import {
   TeamOutlined, FileTextOutlined, StarOutlined, DashboardOutlined,
   LogoutOutlined, UserOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  SafetyCertificateOutlined,
+  SafetyCertificateOutlined, WarningOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useAuthStore, isAdmin } from '../../store/auth'
@@ -51,6 +51,11 @@ export const AppLayout: React.FC = () => {
         key: '/vendor-rating',
         icon: <StarOutlined />,
         label: 'Vendor Rating',
+      },
+      {
+        key: '/non-conformita',
+        icon: <WarningOutlined />,
+        label: 'Non Conformità',
       },
     ] : []),
     ...(user?.role === 'super_admin' ? [

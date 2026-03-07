@@ -17,8 +17,11 @@ import { ContractForm } from './pages/contracts/ContractForm'
 import { VendorRatingDashboard } from './pages/vendor_rating/VendorRatingDashboard'
 import { SupplierRatingDetail } from './pages/vendor_rating/SupplierRatingDetail'
 import { SurveyPage } from './pages/vendor_rating/SurveyPage'
+import { NonConformitaList } from './pages/nonconformita/NonConformitaList'
 import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
+import RegistroTrattamenti from './pages/gdpr/RegistroTrattamenti'
+import DirittoOblio from './pages/gdpr/DirittoOblio'
 import { useAuthStore, isAdmin } from './store/auth'
 import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
@@ -80,6 +83,19 @@ function AppRoutes() {
         } />
         <Route path="vendor-rating/supplier/:supplier_id" element={
           <ProtectedRoute adminOnly><SupplierRatingDetail /></ProtectedRoute>
+        } />
+
+        {/* Non Conformità – solo admin */}
+        <Route path="non-conformita" element={
+          <ProtectedRoute adminOnly><NonConformitaList /></ProtectedRoute>
+        } />
+
+        {/* GDPR – solo super_admin */}
+        <Route path="gdpr/registro-trattamenti" element={
+          <ProtectedRoute superAdminOnly><RegistroTrattamenti /></ProtectedRoute>
+        } />
+        <Route path="gdpr/diritto-oblio" element={
+          <ProtectedRoute superAdminOnly><DirittoOblio /></ProtectedRoute>
         } />
 
         {/* Admin Panel – solo super_admin */}

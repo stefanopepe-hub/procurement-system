@@ -521,6 +521,8 @@ def list_nc(
     supplier_id: Optional[int] = Query(None),
     numero_ordine: Optional[str] = Query(None),
     stato: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -531,17 +533,24 @@ def list_nc(
         query = query.filter(NonConformita.numero_ordine == numero_ordine)
     if stato:
         query = query.filter(NonConformita.stato == stato)
-    ncs = query.order_by(NonConformita.created_at.desc()).limit(200).all()
-    return [
-        {
+    total = query.count()
+    ncs = query.order_by(NonConformita.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+    items = []
+    for nc in ncs:
+        supplier_name = None
+        if nc.supplier_id:
+            s = db.query(Supplier).filter(Supplier.id == nc.supplier_id).first()
+            supplier_name = s.ragione_sociale if s else None
+        items.append({
             "id": nc.id, "nc_id_esterno": nc.nc_id_esterno,
+            "supplier_id": nc.supplier_id, "ragione_sociale": supplier_name,
             "numero_ordine": nc.numero_ordine, "descrizione": nc.descrizione,
             "data_apertura": str(nc.data_apertura) if nc.data_apertura else None,
             "data_chiusura": str(nc.data_chiusura) if nc.data_chiusura else None,
             "stato": nc.stato, "gravita": nc.gravita,
-        }
-        for nc in ncs
-    ]
+            "created_at": str(nc.created_at) if nc.created_at else None,
+        })
+    return {"items": items, "total": total, "page": page, "limit": limit}
 
 
 @router.post("/requests", status_code=201)

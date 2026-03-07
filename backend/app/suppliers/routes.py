@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Request, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, func
 from typing import List, Optional
 from datetime import date, datetime, timezone
 import mimetypes
-import os, shutil, math
+import os, shutil, math, csv, io
 
 from app.database import get_db
 from app.auth.routes import get_current_active_user, require_admin
@@ -105,6 +105,61 @@ def list_suppliers(
     return PaginatedSuppliers(
         items=result, total=total, page=page,
         page_size=page_size, pages=math.ceil(total / page_size)
+    )
+
+
+@router.get("/export/csv")
+def export_suppliers_csv(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Esporta tutti i fornitori in formato CSV."""
+    suppliers = db.query(Supplier).order_by(Supplier.ragione_sociale).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_ALL)
+    writer.writerow([
+        'ID', 'Ragione Sociale', 'Partita IVA', 'Codice Fiscale',
+        'Categoria Merceologica', 'Stato', 'Tipo Accreditamento',
+        'Codice Alyante', 'Settore Attività',
+        'Indirizzo Sede Legale', 'Comune Sede Legale', 'Provincia Sede Legale',
+        'Data Iscrizione', 'Data Riqualifica',
+        'Note Interne', 'Creato Il',
+    ])
+    for s in suppliers:
+        categorie = ''
+        if s.categorie_merceologiche:
+            if isinstance(s.categorie_merceologiche, list):
+                categorie = ', '.join(str(c) for c in s.categorie_merceologiche)
+            else:
+                categorie = str(s.categorie_merceologiche)
+        indirizzo = ' '.join(filter(None, [
+            s.sede_legale_indirizzo or '',
+        ])).strip()
+        writer.writerow([
+            s.id,
+            s.ragione_sociale or '',
+            s.partita_iva or '',
+            s.codice_fiscale or '',
+            categorie,
+            s.status.value if s.status else '',
+            s.accreditament_type.value if s.accreditament_type else '',
+            s.alyante_code or '',
+            s.settore_attivita or '',
+            indirizzo,
+            s.sede_legale_comune or '',
+            s.sede_legale_provincia or '',
+            str(s.data_iscrizione) if s.data_iscrizione else '',
+            str(s.data_riqualifica) if s.data_riqualifica else '',
+            s.note_interne or '',
+            str(s.created_at) if s.created_at else '',
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type='text/csv; charset=utf-8',
+        headers={'Content-Disposition': 'attachment; filename="fornitori.csv"'},
     )
 
 

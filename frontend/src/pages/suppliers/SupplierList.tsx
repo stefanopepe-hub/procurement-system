@@ -5,7 +5,7 @@ import {
 } from 'antd'
 import {
   PlusOutlined, SearchOutlined, FilterOutlined, ExportOutlined,
-  EyeOutlined, EditOutlined
+  EyeOutlined, EditOutlined, DownloadOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
@@ -46,6 +46,22 @@ export const SupplierList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<SupplierStatus[]>([])
   const [accreditamentFilter, setAccreditamentFilter] = useState<AccreditamentType | undefined>()
   const [categoriaFilter, setCategoriaFilter] = useState('')
+
+  const handleExportCSV = async () => {
+    try {
+      const response = await suppliersApi.exportCsv()
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'fornitori.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      message.error('Errore durante l\'export CSV dei fornitori')
+    }
+  }
 
   const load = async () => {
     setLoading(true)
@@ -167,9 +183,14 @@ export const SupplierList: React.FC = () => {
         </Col>
         {admin && (
           <Col>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/suppliers/new')}>
-              Nuovo Fornitore
-            </Button>
+            <Space>
+              <Button icon={<DownloadOutlined />} onClick={handleExportCSV}>
+                Export CSV
+              </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/suppliers/new')}>
+                Nuovo Fornitore
+              </Button>
+            </Space>
           </Col>
         )}
       </Row>

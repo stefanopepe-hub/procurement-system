@@ -85,6 +85,7 @@ export const suppliersApi = {
     api.get(`/alyante/orders/${supplierCode}`),
   downloadDocument: (docId: number) =>
     api.get(`/suppliers/documents/${docId}/download`, { responseType: 'blob' }),
+  exportCsv: () => api.get('/suppliers/export/csv', { responseType: 'blob' }),
 }
 
 // ---- Contracts ----
@@ -101,6 +102,7 @@ export const contractsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
+  exportCsv: () => api.get('/contracts/export/csv', { responseType: 'blob' }),
 }
 
 // ---- AI Analysis ----
@@ -133,4 +135,9 @@ export const vendorRatingApi = {
   createUaReview: (supplierId: number, data: object) =>
     api.post(`/vendor-rating/supplier/${supplierId}/ua-reviews`, data),
   listNc: (params?: object) => api.get('/vendor-rating/non-conformita', { params }),
+}
+
+// ---- Non Conformità ----
+export const nonConformitaApi = {
+  list: (params?: object) => api.get('/vendor-rating/non-conformita', { params }),
 }

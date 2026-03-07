@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_
 from typing import List, Optional
 from datetime import date
-import os, shutil, math
+import os, shutil, math, csv, io
 
 from app.database import get_db
 from app.auth.routes import require_admin
@@ -96,6 +97,59 @@ def list_contracts(
         items=[ContractListItem.model_validate(c) for c in items],
         total=total, page=page, page_size=page_size,
         pages=math.ceil(total / page_size),
+    )
+
+
+@router.get("/export/csv")
+def export_contracts_csv(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Esporta tutti i contratti in formato CSV."""
+    contracts = db.query(Contract).order_by(Contract.id_contratto).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_ALL)
+    writer.writerow([
+        'ID', 'Riferimento Contratto', 'Oggetto', 'Fornitore', 'Codice Fornitore',
+        'Stato', 'Ente Stipulante', 'CDC',
+        'Imponibile (€)', 'IVA (%)', 'Ivato (€)',
+        'Data Inizio', 'Data Scadenza', 'Data Rinegoziazione',
+        'CIG/CUP/Commessa', 'Referente Interno', 'Referente Ufficio Acquisti',
+        'DPA', 'Questionario IT GDPR', 'DPIA',
+        'Alert Scadenza', 'Creato Il',
+    ])
+    for c in contracts:
+        writer.writerow([
+            c.id,
+            c.id_contratto or '',
+            c.oggetto or '',
+            c.ragione_sociale or '',
+            c.codice_fornitore or '',
+            c.status.value if c.status else '',
+            c.ente_stipulante.value if c.ente_stipulante else '',
+            c.cdc or '',
+            str(c.imponibile) if c.imponibile is not None else '',
+            str(c.iva_percentuale) if c.iva_percentuale is not None else '',
+            str(c.ivato) if c.ivato is not None else '',
+            str(c.data_inizio) if c.data_inizio else '',
+            str(c.data_scadenza) if c.data_scadenza else '',
+            str(c.data_rinegoziazione) if c.data_rinegoziazione else '',
+            c.cig_cup_commessa or '',
+            c.referente_interno or '',
+            c.referente_ufficio_acquisti or '',
+            'Sì' if c.dpa else 'No',
+            'Sì' if c.questionario_it_gdpr else 'No',
+            'Sì' if c.dpia else 'No',
+            'Sì' if c.alert_enabled else 'No',
+            str(c.created_at) if c.created_at else '',
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type='text/csv; charset=utf-8',
+        headers={'Content-Disposition': 'attachment; filename="contratti.csv"'},
     )
 
 

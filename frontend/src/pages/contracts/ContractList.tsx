@@ -3,7 +3,7 @@ import {
   Table, Button, Input, Select, Space, Tag, Card, Row, Col,
   Typography, Tooltip, DatePicker, Badge, message, Checkbox
 } from 'antd'
-import { PlusOutlined, SearchOutlined, EyeOutlined, EditOutlined, WarningOutlined } from '@ant-design/icons'
+import { PlusOutlined, SearchOutlined, EyeOutlined, EditOutlined, WarningOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
@@ -56,6 +56,22 @@ export const ContractList: React.FC = () => {
   const [dpaFilter, setDpaFilter] = useState<boolean | undefined>()
   const [gdprFilter, setGdprFilter] = useState<boolean | undefined>()
   const [dpiaFilter, setDpiaFilter] = useState<boolean | undefined>()
+
+  const handleExportCSV = async () => {
+    try {
+      const response = await contractsApi.exportCsv()
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'contratti.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      message.error('Errore durante l\'export CSV dei contratti')
+    }
+  }
 
   const load = async () => {
     setLoading(true)
@@ -196,9 +212,14 @@ export const ContractList: React.FC = () => {
           <small style={{ color: '#888' }}>{total} contratti</small>
         </Col>
         <Col>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/contracts/new')}>
-            Nuovo Contratto
-          </Button>
+          <Space>
+            <Button icon={<DownloadOutlined />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/contracts/new')}>
+              Nuovo Contratto
+            </Button>
+          </Space>
         </Col>
       </Row>
 
