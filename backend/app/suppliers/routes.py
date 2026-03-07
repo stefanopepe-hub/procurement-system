@@ -358,3 +358,61 @@ def download_document(
         media_type=mimetype,
         filename=doc.nome_file,
     )
+
+
+# --- GDPR Art. 17 — Diritto all'oblio / Anonimizzazione fornitore ---
+@router.post("/{supplier_id}/gdpr-erasure", status_code=200, tags=["GDPR"])
+def gdpr_erasure_supplier(
+    supplier_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Anonimizza i dati personali di un fornitore (GDPR Art. 17 — Diritto all'oblio).
+    I dati aziendali (partita IVA, ragione sociale) vengono rimpiazzati con token anonimi,
+    i contatti vengono eliminati e i documenti fisici vengono cancellati dal disco.
+    Il record fornitore rimane per mantenere l'integrità referenziale con contratti e rating.
+    Solo SUPER_ADMIN può eseguire questa operazione."""
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(status_code=403, detail="Solo super_admin può eseguire la cancellazione GDPR")
+
+    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Fornitore non trovato")
+
+    anon_token = f"GDPR_ERASED_{supplier_id}"
+
+    # Anonimizza dati identificativi
+    supplier.ragione_sociale = anon_token
+    supplier.partita_iva = anon_token
+    supplier.codice_fiscale = None
+    supplier.email_pec = None
+    supplier.email_aziendale = None
+    supplier.telefono = None
+    supplier.sito_web = None
+    supplier.sede_legale_indirizzo = None
+    supplier.sede_legale_comune = None
+    supplier.sede_legale_cap = None
+    supplier.alyante_code = None
+    supplier.note = None
+    supplier.status = SupplierStatus.NON_PIU_ACCREDITATO
+    supplier.is_active_in_albo = False
+
+    # Elimina contatti personali
+    db.query(SupplierContact).filter(SupplierContact.supplier_id == supplier_id).delete()
+
+    # Elimina documenti fisici e record DB
+    docs = db.query(SupplierDocument).filter(SupplierDocument.supplier_id == supplier_id).all()
+    for doc in docs:
+        if os.path.exists(doc.file_path):
+            try:
+                os.remove(doc.file_path)
+            except OSError:
+                pass
+        db.delete(doc)
+
+    db.commit()
+    log_action(
+        db, current_user.id, "GDPR_ERASURE", "supplier", str(supplier_id),
+        {"note": "Anonimizzazione GDPR Art.17 eseguita"}
+    )
+    return {"message": f"Fornitore {supplier_id} anonimizzato con successo (GDPR Art. 17)."}

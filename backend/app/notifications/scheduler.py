@@ -196,6 +196,24 @@ def check_supplier_requalification():
         db.close()
 
 
+def cleanup_expired_tokens():
+    """Weekly job: delete expired refresh tokens from DB (GDPR data retention)."""
+    db: Session = SessionLocal()
+    try:
+        from app.auth.models import RefreshToken
+        now = datetime.now(timezone.utc)
+        deleted = db.query(RefreshToken).filter(
+            RefreshToken.expires_at < now
+        ).delete()
+        db.commit()
+        logger.info(f"Cleanup: eliminati {deleted} refresh token scaduti")
+    except Exception as e:
+        logger.error(f"Token cleanup job error: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 def expire_survey_tokens():
     """Daily job: mark expired survey tokens"""
     db: Session = SessionLocal()
@@ -251,6 +269,12 @@ def start_scheduler():
         expire_survey_tokens,
         CronTrigger(hour=0, minute=5),
         id="expire_surveys",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        cleanup_expired_tokens,
+        CronTrigger(day_of_week="sun", hour=3, minute=0),
+        id="cleanup_expired_tokens",
         replace_existing=True,
     )
     scheduler.start()
