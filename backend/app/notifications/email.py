@@ -8,7 +8,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+_SMTP_PLACEHOLDER_HOSTS = {"", "smtp.example.com", "localhost"}
+
+
 def send_email(to: List[str], subject: str, body_html: str, cc: Optional[List[str]] = None) -> bool:
+    # If SMTP is not configured, log and skip gracefully without raising.
+    if not settings.SMTP_HOST or settings.SMTP_HOST in _SMTP_PLACEHOLDER_HOSTS:
+        logger.warning(
+            "SMTP non configurato (SMTP_HOST=%r). Email non inviata | Subject: %s | To: %s",
+            settings.SMTP_HOST, subject, to,
+        )
+        return False
+
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject

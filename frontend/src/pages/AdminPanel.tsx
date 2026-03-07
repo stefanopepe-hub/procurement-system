@@ -6,13 +6,14 @@ import {
 import {
   TeamOutlined, FileTextOutlined, FileOutlined, AuditOutlined,
   SafetyCertificateOutlined, UserOutlined, CheckCircleOutlined,
-  CloseCircleOutlined, BookOutlined, DeleteOutlined,
+  CloseCircleOutlined, BookOutlined, DeleteOutlined, ArrowRightOutlined,
 } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { adminApi } from '../services/api'
 import type { User, UserRole } from '../types'
 
-const { Title, Text, Link } = Typography
+const { Title, Text } = Typography
 const { Option } = Select
 
 // ---- Types ----
@@ -276,7 +277,9 @@ const AuditLogTab: React.FC = () => {
 }
 
 // ---- GDPR Section ----
-const GdprTab: React.FC = () => (
+const GdprTab: React.FC = () => {
+  const navigate = useNavigate()
+  return (
   <Row gutter={[16, 16]}>
     <Col xs={24} md={12}>
       <Card
@@ -288,9 +291,14 @@ const GdprTab: React.FC = () => (
           tratta i dati personali, in conformità al Regolamento UE 2016/679.
         </p>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Link href="/gdpr/registro-trattamenti" target="_blank">
-            Apri Registro Trattamenti →
-          </Link>
+          <Button
+            type="link"
+            icon={<ArrowRightOutlined />}
+            style={{ padding: 0 }}
+            onClick={() => navigate('/gdpr/registro-trattamenti')}
+          >
+            Apri Registro Trattamenti
+          </Button>
           <Text type="secondary" style={{ fontSize: 12 }}>
             Ultimo aggiornamento: verificare con il DPO
           </Text>
@@ -308,9 +316,14 @@ const GdprTab: React.FC = () => (
           da fornitori e soggetti interessati, con relativo registro delle risposte.
         </p>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Link href="/gdpr/diritto-oblio" target="_blank">
-            Apri Richieste Diritto Oblio →
-          </Link>
+          <Button
+            type="link"
+            icon={<ArrowRightOutlined />}
+            style={{ padding: 0 }}
+            onClick={() => navigate('/gdpr/diritto-oblio')}
+          >
+            Apri Richieste Diritto Oblio
+          </Button>
           <Text type="secondary" style={{ fontSize: 12 }}>
             Termine di risposta: 30 giorni dalla richiesta
           </Text>
@@ -349,7 +362,8 @@ const GdprTab: React.FC = () => (
       </Card>
     </Col>
   </Row>
-)
+  )
+}
 
 // ---- Stats Cards ----
 const StatsCards: React.FC<{ stats: AdminStats }> = ({ stats }) => (

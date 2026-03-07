@@ -52,29 +52,30 @@ def check_contract_notifications():
             if c.data_scadenza and not c.data_rinegoziazione:
                 days_to_expiry = (c.data_scadenza - today).days
 
-                if days_to_expiry == 60 and not c.notifica_60gg_sent:
-                    _send_contract_expiry_notification(db, c, 60)
+                # Use <= so that missed daily runs still trigger the notification.
+                if 0 < days_to_expiry <= 60 and not c.notifica_60gg_sent:
+                    _send_contract_expiry_notification(db, c, days_to_expiry)
                     c.notifica_60gg_sent = True
 
-                elif days_to_expiry == 30 and not c.notifica_30gg_sent:
-                    _send_contract_expiry_notification(db, c, 30)
+                if 0 < days_to_expiry <= 30 and not c.notifica_30gg_sent:
+                    _send_contract_expiry_notification(db, c, days_to_expiry)
                     c.notifica_30gg_sent = True
 
-                elif days_to_expiry == 7:
+                if 0 < days_to_expiry <= 7:
                     tipo_7 = "notifica_scadenza_7gg"
                     if not _already_sent(db, c.id, tipo_7):
-                        success = send_contract_expiry_email(c, 7)
+                        success = send_contract_expiry_email(c, days_to_expiry)
                         comm = ContractCommunication(
                             contract_id=c.id,
                             tipo=tipo_7,
-                            oggetto=f"[Alert] Contratto {c.id_contratto} scade tra 7 giorni",
+                            oggetto=f"[Alert] Contratto {c.id_contratto} scade tra {days_to_expiry} giorni",
                             destinatari=[settings.EMAIL_ALBO_FORNITORI],
                             is_auto=True,
                             status="sent" if success else "failed",
                         )
                         db.add(comm)
 
-                elif days_to_expiry == 1:
+                if days_to_expiry == 1:
                     tipo_1 = "notifica_scadenza_1gg"
                     if not _already_sent(db, c.id, tipo_1):
                         success = send_contract_expiry_email(c, 1)
@@ -92,12 +93,12 @@ def check_contract_notifications():
             if c.data_rinegoziazione:
                 days_to_rineg = (c.data_rinegoziazione - today).days
 
-                if days_to_rineg == 60 and not c.notifica_rinegoziazione_60gg_sent:
-                    _send_rinegoziazione_notification(db, c, 60)
+                if 0 < days_to_rineg <= 60 and not c.notifica_rinegoziazione_60gg_sent:
+                    _send_rinegoziazione_notification(db, c, days_to_rineg)
                     c.notifica_rinegoziazione_60gg_sent = True
 
-                elif days_to_rineg == 30 and not c.notifica_rinegoziazione_30gg_sent:
-                    _send_rinegoziazione_notification(db, c, 30)
+                if 0 < days_to_rineg <= 30 and not c.notifica_rinegoziazione_30gg_sent:
+                    _send_rinegoziazione_notification(db, c, days_to_rineg)
                     c.notifica_rinegoziazione_30gg_sent = True
 
         db.commit()
