@@ -35,7 +35,30 @@ from app.vendor_rating.models import (
     UAYearlyReview, NonConformita
 )
 
-logging.basicConfig(level=logging.INFO)
+import json as _json
+
+class _JSONFormatter(logging.Formatter):
+    """Structured JSON log formatter — ottimale per Railway/Datadog/Cloudwatch."""
+    def format(self, record: logging.LogRecord) -> str:
+        entry = {
+            "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%SZ"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+        }
+        if record.exc_info:
+            entry["exc"] = self.formatException(record.exc_info)
+        if hasattr(record, "extra"):
+            entry.update(record.extra)
+        return _json.dumps(entry, ensure_ascii=False)
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(_JSONFormatter())
+logging.root.setLevel(logging.INFO)
+logging.root.handlers = [_handler]
+# Silence noisy libraries
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+logging.getLogger("apscheduler").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 limiter = Limiter(key_func=get_remote_address)
@@ -70,7 +93,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
