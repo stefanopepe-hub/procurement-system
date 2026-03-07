@@ -10,6 +10,11 @@ from app.notifications.email import (
 from app.config import settings
 import logging
 
+# Thresholds (days) for which expiry alerts are sent.
+# The model has explicit boolean columns for 60gg and 30gg; for 7gg and 1gg
+# we track delivery via ContractCommunication to avoid adding new migrations.
+CONTRACT_EXPIRY_THRESHOLDS = [60, 30, 7, 1]
+
 logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler(timezone="Europe/Rome")

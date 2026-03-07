@@ -11,12 +11,15 @@ import logging
 
 from app.config import settings
 from app.database import Base, engine
-from app.auth.routes import router as auth_router
+from app.auth.routes import router as auth_router, get_current_active_user
 from app.suppliers.routes import router as suppliers_router
 from app.contracts.routes import router as contracts_router
 from app.vendor_rating.routes import router as vendor_rating_router
 from app.ai.routes import router as ai_router
-from app.notifications.scheduler import start_scheduler, scheduler
+from app.notifications.scheduler import (
+    start_scheduler, scheduler,
+    check_contract_notifications,
+)
 
 # Import all models to register them with SQLAlchemy
 from app.auth.models import User, RefreshToken
@@ -128,6 +131,29 @@ app.include_router(ai_router, prefix="/api/v1")
 @app.get("/api/v1/health")
 def health():
     return {"status": "ok", "version": settings.APP_VERSION}
+
+
+@app.post("/api/v1/admin/check-expiries", tags=["admin"])
+def admin_check_expiries(current_user=Depends(get_current_active_user)):
+    """Trigger contract-expiry notification checks on demand (admin only).
+
+    This endpoint runs the same logic as the daily APScheduler job so that
+    operators or an external cron can force an immediate check without waiting
+    for the next scheduled run.
+    """
+    from app.auth.models import UserRole
+    if current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
+        from fastapi import HTTPException, status as http_status
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Solo gli amministratori possono eseguire questo controllo.",
+        )
+    try:
+        check_contract_notifications()
+        return {"status": "ok", "detail": "Controllo scadenze contratti eseguito."}
+    except Exception as exc:
+        logger.error("admin_check_expiries error: %s", exc)
+        return {"status": "error", "detail": str(exc)}
 
 
 @app.get("/api/v1/alyante/stub/orders/{supplier_code}")

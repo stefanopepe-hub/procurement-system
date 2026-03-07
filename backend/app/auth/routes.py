@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from app.database import get_db
@@ -174,6 +175,59 @@ def change_password(
     db.commit()
     log_action(db, current_user.id, "CHANGE_PASSWORD", "auth", str(current_user.id))
     return {"message": "Password changed successfully"}
+
+
+@router.get("/admin/stats")
+def get_admin_stats(db: Session = Depends(get_db), _: User = Depends(require_super_admin)):
+    """System stats for AdminPanel – super_admin only."""
+    from app.suppliers.models import Supplier
+    from app.contracts.models import Contract
+    from app.audit.models import AuditLog
+
+    total_suppliers = db.query(Supplier).count()
+    total_contracts = db.query(Contract).count()
+    total_users = db.query(User).count()
+    total_audit_entries = db.query(AuditLog).count()
+    total_documents = db.execute(
+        text("SELECT COALESCE(SUM(cnt),0) FROM ("
+             "SELECT COUNT(*) AS cnt FROM supplier_documents "
+             "UNION ALL "
+             "SELECT COUNT(*) AS cnt FROM contract_documents"
+             ") t")
+    ).scalar()
+
+    return {
+        "total_suppliers": total_suppliers,
+        "total_contracts": total_contracts,
+        "total_users": total_users,
+        "total_documents": int(total_documents or 0),
+        "total_audit_entries": total_audit_entries,
+    }
+
+
+@router.get("/admin/audit-log")
+def get_audit_log(db: Session = Depends(get_db), _: User = Depends(require_super_admin)):
+    """Last 50 audit log entries – super_admin only."""
+    from app.audit.models import AuditLog
+    entries = (
+        db.query(AuditLog)
+        .order_by(AuditLog.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return [
+        {
+            "id": e.id,
+            "user_id": e.user_id,
+            "action": e.action,
+            "resource_type": e.resource_type,
+            "resource_id": e.resource_id,
+            "ip_address": e.ip_address,
+            "status": e.status,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        }
+        for e in entries
+    ]
 
 
 @router.post("/bootstrap", status_code=201, tags=["Authentication"])

@@ -5,7 +5,7 @@ import {
 } from 'antd'
 import {
   ArrowLeftOutlined, EditOutlined, FileTextOutlined,
-  TeamOutlined, ShoppingOutlined, MailOutlined, SafetyOutlined, UploadOutlined
+  TeamOutlined, ShoppingOutlined, MailOutlined, SafetyOutlined, UploadOutlined, DownloadOutlined
 } from '@ant-design/icons'
 import { Upload } from 'antd'
 import DatePicker from 'antd/es/date-picker'
@@ -68,6 +68,39 @@ export const SupplierDetail: React.FC = () => {
       setSupplier(res.data)
     } catch {
       // ignore
+    }
+  }
+
+  const handleDownload = async (docId: number, fileName: string) => {
+    try {
+      const res = await suppliersApi.downloadDocument(docId)
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', fileName)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      message.error('Errore nel download del documento')
+    }
+  }
+
+  const getExpiryBadge = (dataScadenza: string | null) => {
+    if (!dataScadenza) return <span style={{ color: '#999' }}>—</span>
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const expiry = new Date(dataScadenza)
+    expiry.setHours(0, 0, 0, 0)
+    const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    const label = expiry.toLocaleDateString('it-IT')
+    if (diffDays < 0) {
+      return <Tag color="red">Scaduto · {label}</Tag>
+    } else if (diffDays <= 30) {
+      return <Tag color="orange">Scade in {diffDays}g · {label}</Tag>
+    } else {
+      return <Tag color="green">{label}</Tag>
     }
   }
 
@@ -223,6 +256,32 @@ export const SupplierDetail: React.FC = () => {
             />
 
             <Divider>Documenti Societari</Divider>
+            {(() => {
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              const docs = supplier.documents || []
+              const expired = docs.filter(d => d.data_scadenza && new Date(d.data_scadenza) < today)
+              const expiringSoon = docs.filter(d => {
+                if (!d.data_scadenza) return false
+                const exp = new Date(d.data_scadenza)
+                const diffDays = Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                return diffDays >= 0 && diffDays <= 30
+              })
+              if (expired.length > 0 || expiringSoon.length > 0) {
+                const parts: string[] = []
+                if (expired.length > 0) parts.push(`${expired.length} documento${expired.length > 1 ? 'i' : ''} scaduto${expired.length > 1 ? 'i' : ''}`)
+                if (expiringSoon.length > 0) parts.push(`${expiringSoon.length} documento${expiringSoon.length > 1 ? 'i' : ''} in scadenza entro 30 giorni`)
+                return (
+                  <Alert
+                    type={expired.length > 0 ? 'error' : 'warning'}
+                    showIcon
+                    message={`Attenzione: ${parts.join(' e ')}`}
+                    style={{ marginBottom: 12 }}
+                  />
+                )
+              }
+              return null
+            })()}
             <Space style={{ marginBottom: 12 }}>
               <Button icon={<UploadOutlined />} onClick={() => setUploadModal(true)}>
                 Carica Documento
@@ -236,11 +295,21 @@ export const SupplierDetail: React.FC = () => {
               columns={[
                 { title: 'Tipo', dataIndex: 'tipo', key: 'tipo' },
                 { title: 'File', dataIndex: 'nome_file', key: 'file',
-                  render: (v) => <Button type="link" size="small">{v}</Button> },
+                  render: (v) => <span>{v}</span> },
                 { title: 'Scadenza', dataIndex: 'data_scadenza', key: 'scadenza',
-                  render: (v) => v ? new Date(v).toLocaleDateString('it-IT') : '—' },
+                  render: (v) => getExpiryBadge(v) },
                 { title: 'Caricato il', dataIndex: 'data_upload', key: 'upload',
                   render: (v) => new Date(v).toLocaleDateString('it-IT') },
+                { title: 'Azioni', key: 'actions',
+                  render: (_: any, record: any) => (
+                    <Button
+                      icon={<DownloadOutlined />}
+                      size="small"
+                      onClick={() => handleDownload(record.id, record.nome_file)}
+                    >
+                      Scarica
+                    </Button>
+                  ) },
               ]}
             />
 

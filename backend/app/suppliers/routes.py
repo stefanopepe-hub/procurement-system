@@ -272,3 +272,34 @@ def upload_document(
     db.refresh(doc)
     log_action(db, current_user.id, "UPLOAD", "supplier_document", str(doc.id), {"tipo": tipo})
     return {"id": doc.id, "nome_file": safe_name, "message": "Uploaded successfully"}
+
+
+# --- Document download ---
+@router.get("/documents/{doc_id}/download")
+def download_document(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    doc = db.query(SupplierDocument).filter(SupplierDocument.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Only admin/super_admin can download supplier documents
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to download this document")
+
+    if not os.path.exists(doc.file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    mimetype, _ = mimetypes.guess_type(doc.nome_file)
+    if mimetype is None:
+        mimetype = "application/octet-stream"
+
+    log_action(db, current_user.id, "DOWNLOAD", "supplier_document", str(doc.id), {"nome_file": doc.nome_file})
+
+    return FileResponse(
+        path=doc.file_path,
+        media_type=mimetype,
+        filename=doc.nome_file,
+    )

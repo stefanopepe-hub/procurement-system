@@ -83,6 +83,8 @@ export const suppliersApi = {
   },
   getOrders: (supplierCode: string) =>
     api.get(`/alyante/stub/orders/${supplierCode}`),
+  downloadDocument: (docId: number) =>
+    api.get(`/suppliers/documents/${docId}/download`, { responseType: 'blob' }),
 }
 
 // ---- Contracts ----
@@ -105,6 +107,15 @@ export const contractsApi = {
 export const aiApi = {
   analyzeContract: (contractId: number, documentId: number) =>
     api.post(`/ai/contracts/${contractId}/analyze/${documentId}`),
+}
+
+// ---- Admin (super_admin only) ----
+export const adminApi = {
+  stats: () => api.get('/auth/admin/stats'),
+  auditLog: () => api.get('/auth/admin/audit-log'),
+  listUsers: () => api.get('/auth/users'),
+  updateUser: (id: number, data: object) => api.patch(`/auth/users/${id}`, data),
+  createUser: (data: object) => api.post('/auth/users', data),
 }
 
 // ---- Vendor Rating ----
