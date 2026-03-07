@@ -153,13 +153,24 @@ export const ContractForm: React.FC = () => {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isEdit ? `/contracts/${id}` : '/contracts')}>
-          {isEdit ? 'Torna al contratto' : 'Database Contratti'}
+      {/* Barra azioni sticky in cima */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        background: '#fff', padding: '12px 0 12px',
+        borderBottom: '1px solid #f0f0f0', marginBottom: 16,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+      }}>
+        <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isEdit ? `/contracts/${id}` : '/contracts')}>
+            {isEdit ? 'Torna al contratto' : 'Database Contratti'}
+          </Button>
+          <Title level={4} style={{ margin: 0 }}>{isEdit ? 'Modifica Contratto' : 'Nuovo Contratto'}</Title>
+        </Space>
+        <Button type="primary" icon={<SaveOutlined />} size="large" loading={saving}
+          onClick={() => form.submit()}>
+          {isEdit ? 'Salva Modifiche' : 'Crea Contratto'}
         </Button>
-      </Space>
-
-      <Title level={3}>{isEdit ? 'Modifica Contratto' : 'Nuovo Contratto'}</Title>
+      </div>
 
       <Form form={form} layout="vertical" onFinish={onFinish}>
 
