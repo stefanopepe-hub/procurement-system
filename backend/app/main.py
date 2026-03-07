@@ -16,6 +16,7 @@ from app.suppliers.routes import router as suppliers_router
 from app.contracts.routes import router as contracts_router
 from app.vendor_rating.routes import router as vendor_rating_router
 from app.ai.routes import router as ai_router
+from app.alyante.routes import router as alyante_router
 from app.notifications.scheduler import (
     start_scheduler, scheduler,
     check_contract_notifications,
@@ -126,6 +127,7 @@ app.include_router(suppliers_router, prefix="/api/v1")
 app.include_router(contracts_router, prefix="/api/v1")
 app.include_router(vendor_rating_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
+app.include_router(alyante_router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
@@ -156,23 +158,8 @@ def admin_check_expiries(current_user=Depends(get_current_active_user)):
         return {"status": "error", "detail": str(exc)}
 
 
-@app.get("/api/v1/alyante/stub/orders/{supplier_code}")
-def alyante_stub_orders(supplier_code: str):
-    """Stub endpoint simulating Alyante orders data"""
-    return {
-        "supplier_code": supplier_code,
-        "orders": [
-            {
-                "id": "ORD-2024-001", "numero": "2024/001",
-                "data": "2024-01-15", "stato": "consegnato",
-                "importo": 15000.00, "oggetto": "Fornitura materiale informatico",
-                "tipo": "ORD",
-            },
-            {
-                "id": "ORD-2024-002", "numero": "2024/002",
-                "data": "2024-03-10", "stato": "fatturato",
-                "importo": 8500.00, "oggetto": "Manutenzione server",
-                "tipo": "OS",
-            },
-        ]
-    }
+@app.get("/api/v1/alyante/stub/orders/{supplier_code}", tags=["Alyante"])
+async def alyante_stub_orders(supplier_code: str):
+    """Retrocompatibilità: reindirizza al nuovo endpoint /alyante/orders/{supplier_code}"""
+    from app.alyante.client import alyante_client
+    return await alyante_client.get_orders(supplier_code)

@@ -82,7 +82,7 @@ export const suppliersApi = {
     })
   },
   getOrders: (supplierCode: string) =>
-    api.get(`/alyante/stub/orders/${supplierCode}`),
+    api.get(`/alyante/orders/${supplierCode}`),
   downloadDocument: (docId: number) =>
     api.get(`/suppliers/documents/${docId}/download`, { responseType: 'blob' }),
 }

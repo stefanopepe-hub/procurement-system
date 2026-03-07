@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     ALYANTE_API_URL: str = "http://alyante-stub:8001"
     ALYANTE_API_KEY: str = ""        # Set to require API key on webhook
     ALYANTE_ENABLED: bool = False
+    ALYANTE_BASE_URL: str = ""       # es: https://api.alyante.it/v1 — vuoto = usa stub
+    ALYANTE_USERNAME: str = ""
+    ALYANTE_PASSWORD: str = ""
 
     # Non Conformità tool webhook
     NC_API_KEY: str = ""             # Set to require API key on webhook
