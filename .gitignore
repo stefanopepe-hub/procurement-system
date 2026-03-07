@@ -9,3 +9,4 @@ uploads/
 *.egg-info/
 .venv/
 venv/
+*.db
