@@ -1,0 +1,23 @@
+name: Deploy su Railway
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy su Railway
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installa Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy Backend
+        run: railway up --service ${{ secrets.RAILWAY_BACKEND_SERVICE }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Deploy Frontend
+        run: railway up --service ${{ secrets.RAILWAY_FRONTEND_SERVICE }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
