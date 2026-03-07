@@ -85,18 +85,7 @@ export const AppLayout: React.FC = () => {
             <StarOutlined />
           </Badge>
         ),
-        label: (
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            Vendor Rating
-            {pendingCount > 0 && (
-              <Badge
-                count={pendingCount}
-                size="small"
-                style={{ backgroundColor: '#faad14', marginLeft: 6 }}
-              />
-            )}
-          </span>
-        ),
+        label: 'Vendor Rating',
       },
       {
         key: '/non-conformita',

@@ -63,13 +63,11 @@ export const SupplierRatingDetail: React.FC = () => {
       try {
         const [rRes, sRes, uaRes] = await Promise.all([
           vendorRatingApi.supplierRatings(Number(supplier_id)),
-          vendorRatingApi.dashboard({ q: '', page_size: 999 }),
+          vendorRatingApi.supplierSummary(Number(supplier_id)),
           vendorRatingApi.listUaReviews(Number(supplier_id)),
         ])
         setRatings(rRes.data)
-        // Find this supplier in dashboard
-        const found = sRes.data.items.find((s: SupplierRatingSummary) => s.supplier_id === Number(supplier_id))
-        if (found) setSummary(found)
+        setSummary(sRes.data)
         setUaReviews(uaRes.data)
         // Pre-fill UA form for current year if exists
         const currentReview = uaRes.data.find((r: any) => r.anno === currentYear)

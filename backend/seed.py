@@ -485,8 +485,75 @@ def seed():
         db.commit()
         print(f"  ✓ {ratings_count} valutazioni create")
 
-        # ── 5. SURVEY APERTE (per testare il flusso) ────────────────────────
-        print("\n[4b] Creazione survey aperte per test flusso email...")
+        # ── 5. NON CONFORMITÀ ────────────────────────────────────────────────
+        print("\n[4b] Creazione non conformità di test...")
+        nc_count = 0
+        fornitori_con_nc = random.sample(fornitori[:10], 5)
+        gravita_options = ["lieve", "media", "grave"]
+        stati_nc = ["aperta", "in_lavorazione", "chiusa"]
+        for fornitore in fornitori_con_nc:
+            n_nc = random.randint(1, 4)
+            for k in range(n_nc):
+                stato_nc = random.choice(stati_nc)
+                data_apertura = rnd_date(180, 10)
+                data_chiusura = rnd_date(9, 1) if stato_nc == "chiusa" else None
+                nc = NonConformita(
+                    supplier_id=fornitore.id,
+                    nc_id_esterno=f"NC-EXT-{fornitore.alyante_code}-{k+1:03d}",
+                    numero_ordine=f"ORD-{fornitore.alyante_code}-{random.randint(1,50):03d}",
+                    codice_fornitore=fornitore.alyante_code,
+                    descrizione=random.choice([
+                        "Materiale consegnato non conforme alle specifiche tecniche",
+                        "Quantità ricevuta inferiore all'ordinato (shortage > 5%)",
+                        "Documentazione accompagnatoria incompleta o errata",
+                        "Prodotto scaduto o prossimo alla scadenza",
+                        "Imballaggio danneggiato - merce non integra",
+                        "Difformità rispetto al campione approvato",
+                        "Ritardo nella comunicazione di problemi di fornitura",
+                    ]),
+                    data_apertura=data_apertura,
+                    data_chiusura=data_chiusura,
+                    stato=stato_nc,
+                    gravita=random.choice(gravita_options),
+                    raw_payload={"source": "seed_test", "fornitore": fornitore.alyante_code},
+                )
+                db.add(nc)
+                nc_count += 1
+
+        db.commit()
+        print(f"  ✓ {nc_count} non conformità create per 5 fornitori")
+
+        # ── 6. UA YEARLY REVIEWS ─────────────────────────────────────────────
+        print("\n[4c] Creazione valutazioni annuali UA...")
+        anno_corrente = datetime.now().year
+        ua_count = 0
+        fornitori_con_ua = random.sample(fornitori, min(12, len(fornitori)))
+        for fornitore in fornitori_con_ua:
+            if not admin_users:
+                continue
+            is_strategic = fornitore.accreditament_type == "strategico"
+            base_ua = 3.8 if is_strategic else 3.2
+            ua = UAYearlyReview(
+                supplier_id=fornitore.id,
+                anno=anno_corrente,
+                kpi1_qualita_prezzo=round(min(5, max(1, random.gauss(base_ua, 0.5))), 1),
+                kpi2_qualita_relazionale=round(min(5, max(1, random.gauss(base_ua + 0.2, 0.4))), 1),
+                kpi3_qualita_tecnica=round(min(5, max(1, random.gauss(base_ua, 0.6))), 1),
+                kpi4_affidabilita_tempi=round(min(5, max(1, random.gauss(base_ua - 0.1, 0.5))), 1),
+                kpi5_gestione_nc=round(min(5, max(1, random.gauss(base_ua - 0.2, 0.7))), 1),
+                kpi6_innovazione=round(min(5, max(1, random.gauss(base_ua - 0.3, 0.8))), 1),
+                media_ua=round(min(5, max(1, random.gauss(base_ua, 0.4))), 2),
+                note=f"Valutazione annuale {anno_corrente} — fornitore {'strategico' if is_strategic else 'preferenziale'}.",
+                reviewer_id=random.choice(admin_users).id,
+            )
+            db.add(ua)
+            ua_count += 1
+
+        db.commit()
+        print(f"  ✓ {ua_count} valutazioni UA annuali create (anno {anno_corrente})")
+
+        # ── 7. SURVEY APERTE (per testare il flusso) ────────────────────────
+        print("\n[5] Creazione survey aperte per test flusso email...")
         survey_count = 0
         for fornitore in random.sample(fornitori, min(8, len(fornitori))):
             for k in range(random.randint(1, 3)):
@@ -540,6 +607,11 @@ def seed():
         print(f"   Admin:         admin_mario / Admin2024!Tlt")
         print(f"   Viewer:        viewer_luigi / Viewer2024!Tlt")
 
+        total_nc = db.query(NonConformita).count()
+        total_ua = db.query(UAYearlyReview).count()
+        print(f"   📋 Non conformità: {total_nc}")
+        print(f"   🏆 Valutazioni UA: {total_ua}")
+
         print(f"\n⚠️  Contratti urgenti (scadenza < 30gg): 8 contratti")
         print(f"⚠️  Contratti in attenzione (30-60gg):   7 contratti")
 
@@ -590,7 +662,7 @@ def reset_data(db):
     from sqlalchemy import text
     # Ordine inverso per rispettare FK
     tables = [
-        "vendor_ratings", "vendor_rating_requests", "supplier_rating_summary",
+        "vendor_ratings", "vendor_rating_requests", "supplier_rating_summaries",
         "ua_yearly_reviews", "non_conformita",
         "contract_communications", "contract_documents", "contract_orders", "contracts",
         "supplier_communications", "supplier_documents", "supplier_certifications",

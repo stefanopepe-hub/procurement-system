@@ -9,14 +9,28 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
-    # SPA routing
+    client_max_body_size 51m;
+
+    # Proxy verso backend API (usato in docker-compose locale)
+    # Su Railway/cloud, il frontend chiama VITE_API_URL direttamente
+    location /api/ {
+        proxy_pass ${BACKEND_URL};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+
+    # SPA routing - tutte le rotte non-file vanno a index.html
     location / {
         try_files $uri $uri/ /index.html;
     }
 
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|svg|ico|woff2?)$ {
+    # Cache asset statici (js, css, immagini, font)
+    location ~* \.(js|css|png|jpg|jpeg|svg|ico|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        try_files $uri =404;
     }
 }

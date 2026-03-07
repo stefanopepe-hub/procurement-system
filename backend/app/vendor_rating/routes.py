@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
-import math, secrets
+import math, secrets, logging
+
+logger = logging.getLogger(__name__)
 
 from app.database import get_db
 from app.auth.routes import require_admin, get_current_active_user
@@ -156,6 +158,14 @@ def alyante_webhook(
         Supplier.alyante_code == data.codice_fornitore
     ).first()
 
+    if not supplier:
+        logger.warning(f"Webhook Alyante: fornitore '{data.codice_fornitore}' non trovato nell'Albo.")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Fornitore con codice Alyante '{data.codice_fornitore}' non presente nell'Albo Fornitori. "
+                   "Aggiungere il fornitore prima di inviare eventi di valutazione."
+        )
+
     # Evita duplicati per stesso ordine+evento
     existing = db.query(VendorRatingRequest).filter(
         VendorRatingRequest.alyante_order_id == data.alyante_order_id,
@@ -168,7 +178,7 @@ def alyante_webhook(
     expires = datetime.now(timezone.utc) + timedelta(days=30)
 
     req = VendorRatingRequest(
-        supplier_id=supplier.id if supplier else 0,
+        supplier_id=supplier.id,
         alyante_order_id=data.alyante_order_id,
         protocollo_ordine=data.protocollo_ordine,
         numero_pubblicazione=data.numero_pubblicazione,

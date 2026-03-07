@@ -51,6 +51,10 @@ services:
     restart: always
     ports:
       - "${PORT:-80}:80"
+    environment:
+      PORT: "80"
+      BACKEND_URL: "http://backend:8000"
+      VITE_API_URL: ""
     depends_on:
       - backend
     networks:

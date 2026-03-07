@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Form, Input, Select, DatePicker, Button, Card, Row, Col, Typography,
   Space, Switch, InputNumber, Divider, Table, Checkbox, Tag, message,
@@ -34,6 +34,7 @@ export const ContractForm: React.FC = () => {
 
   // Supplier search
   const [supplierOptions, setSupplierOptions] = useState<{ value: number; label: string }[]>([])
+  const supplierSearchTimeout = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     if (isEdit) {
@@ -53,13 +54,16 @@ export const ContractForm: React.FC = () => {
     }
   }, [id])
 
-  const searchSuppliers = async (q: string) => {
+  const searchSuppliers = (q: string) => {
     if (!q) return
-    const res = await suppliersApi.list({ q, page_size: 20 })
-    setSupplierOptions(res.data.items.map((s: any) => ({
-      value: s.id,
-      label: `${s.ragione_sociale} (${s.alyante_code || s.partita_iva || '—'})`,
-    })))
+    clearTimeout(supplierSearchTimeout.current)
+    supplierSearchTimeout.current = setTimeout(async () => {
+      const res = await suppliersApi.list({ q, page_size: 20 })
+      setSupplierOptions(res.data.items.map((s: any) => ({
+        value: s.id,
+        label: `${s.ragione_sociale} (${s.alyante_code || s.partita_iva || '—'})`,
+      })))
+    }, 400)
   }
 
   const loadAvailableOrders = async (supplierId: number) => {

@@ -246,4 +246,4 @@ def bootstrap_admin(db: Session = Depends(get_db)):
     )
     db.add(user)
     db.commit()
-    return {"message": "Admin created", "username": "admin", "password": "Admin123456!"}
+    return {"message": "Admin created", "username": "admin", "note": "Cambiare la password al primo accesso tramite il menu utente."}
