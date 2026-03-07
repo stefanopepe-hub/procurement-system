@@ -26,10 +26,11 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_this_jwt_secret_in_production}
       SECRET_KEY: ${SECRET_KEY:-change_this_secret_in_production}
       DEBUG: "false"
-      SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
+      SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-noreply@telethon.it}
+      SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       SMTP_TLS: "true"
       EMAIL_FROM: ${EMAIL_FROM:-noreply@telethon.it}
       EMAIL_ALBO_FORNITORI: ${EMAIL_ALBO_FORNITORI:-albofornitori@telethon.it}

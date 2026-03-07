@@ -20,11 +20,29 @@ logger = logging.getLogger(__name__)
 scheduler = BackgroundScheduler(timezone="Europe/Rome")
 
 
+def _already_sent(db, contract_id: int, tipo: str) -> bool:
+    """Return True if a notification of *tipo* was already sent for this contract."""
+    from app.contracts.models import ContractCommunication
+    return db.query(ContractCommunication).filter(
+        ContractCommunication.contract_id == contract_id,
+        ContractCommunication.tipo == tipo,
+        ContractCommunication.status == "sent",
+    ).first() is not None
+
+
 def check_contract_notifications():
-    """Daily job: send expiry and renegotiation alerts for contracts"""
+    """Daily job: send expiry and renegotiation alerts for contracts.
+
+    Thresholds covered: 60, 30, 7, 1 days before expiry / renegotiation date.
+    For 60gg and 30gg the model has dedicated boolean sentinel columns; for 7gg
+    and 1gg delivery is tracked via ContractCommunication rows to avoid a
+    database migration.
+    """
     db: Session = SessionLocal()
     try:
         from app.contracts.models import Contract, ContractCommunication
+        # Import the public send_contract_expiry_email from the top-level module
+        from notifications import send_contract_expiry_email  # noqa: E402
         today = date.today()
 
         contracts = db.query(Contract).filter(Contract.alert_enabled == True).all()
@@ -41,6 +59,34 @@ def check_contract_notifications():
                 elif days_to_expiry == 30 and not c.notifica_30gg_sent:
                     _send_contract_expiry_notification(db, c, 30)
                     c.notifica_30gg_sent = True
+
+                elif days_to_expiry == 7:
+                    tipo_7 = "notifica_scadenza_7gg"
+                    if not _already_sent(db, c.id, tipo_7):
+                        success = send_contract_expiry_email(c, 7)
+                        comm = ContractCommunication(
+                            contract_id=c.id,
+                            tipo=tipo_7,
+                            oggetto=f"[Alert] Contratto {c.id_contratto} scade tra 7 giorni",
+                            destinatari=[settings.EMAIL_ALBO_FORNITORI],
+                            is_auto=True,
+                            status="sent" if success else "failed",
+                        )
+                        db.add(comm)
+
+                elif days_to_expiry == 1:
+                    tipo_1 = "notifica_scadenza_1gg"
+                    if not _already_sent(db, c.id, tipo_1):
+                        success = send_contract_expiry_email(c, 1)
+                        comm = ContractCommunication(
+                            contract_id=c.id,
+                            tipo=tipo_1,
+                            oggetto=f"[Alert] Contratto {c.id_contratto} scade domani",
+                            destinatari=[settings.EMAIL_ALBO_FORNITORI],
+                            is_auto=True,
+                            status="sent" if success else "failed",
+                        )
+                        db.add(comm)
 
             # --- Data rinegoziazione ---
             if c.data_rinegoziazione:
