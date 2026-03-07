@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Request, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, func
 from typing import List, Optional
 from datetime import date, datetime, timezone
+import mimetypes
 import os, shutil, math
 
 from app.database import get_db

@@ -1,6 +1,10 @@
+import os
 from pydantic_settings import BaseSettings
+from pydantic import validator
 from typing import List
-import secrets
+
+
+_DEFAULT_SECRET = "CHANGE-ME-IN-PRODUCTION-use-secrets-token-urlsafe-32"
 
 
 class Settings(BaseSettings):
@@ -8,14 +12,18 @@ class Settings(BaseSettings):
     APP_NAME: str = "Procurement System"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    ENVIRONMENT: str = "development"
+
+    # SECURITY — read from environment; fallback is only for local dev
+    SECRET_KEY: str = os.environ.get("SECRET_KEY", _DEFAULT_SECRET)
+    JWT_SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY", _DEFAULT_SECRET)
+
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80", "https://believable-stillness-production-466d.up.railway.app"]
 
     # Database
     DATABASE_URL: str = "postgresql://procurement:procurement@db:5432/procurement_db"
 
     # JWT
-    JWT_SECRET_KEY: str = secrets.token_urlsafe(32)
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -49,6 +57,26 @@ class Settings(BaseSettings):
 
     # Rate limiting
     RATE_LIMIT_PER_MINUTE: int = 60
+
+    @validator('SECRET_KEY')
+    def warn_default_secret_key(cls, v, values):
+        if v == _DEFAULT_SECRET:
+            import warnings
+            warnings.warn(
+                "SECRET_KEY usa il valore di default! Impostare una chiave sicura in produzione.",
+                stacklevel=2,
+            )
+        return v
+
+    @validator('JWT_SECRET_KEY')
+    def warn_default_jwt_secret_key(cls, v, values):
+        if v == _DEFAULT_SECRET:
+            import warnings
+            warnings.warn(
+                "JWT_SECRET_KEY usa il valore di default! Impostare una chiave sicura in produzione.",
+                stacklevel=2,
+            )
+        return v
 
     class Config:
         env_file = ".env"

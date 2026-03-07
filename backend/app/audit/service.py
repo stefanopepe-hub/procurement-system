@@ -13,6 +13,7 @@ def log_action(
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
     status: str = "success",
+    auto_commit: bool = True,
 ):
     entry = AuditLog(
         user_id=user_id,
@@ -25,4 +26,7 @@ def log_action(
         status=status,
     )
     db.add(entry)
-    db.commit()
+    if auto_commit:
+        db.commit()
+    else:
+        db.flush()  # Salva senza commit
