@@ -192,7 +192,7 @@ export const AppLayout: React.FC = () => {
             </div>
           ) : (
             <img
-              src="/telethon-logo.svg"
+              src="/Telethon_logo CMYK.svg"
               alt="Fondazione Telethon"
               style={{ height: 36, filter: 'brightness(0) invert(1)', opacity: 0.92 }}
             />

@@ -45,7 +45,7 @@ export const Login: React.FC = () => {
         {/* Logo Telethon */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <img
-            src="/telethon-logo.svg"
+            src="/Telethon_logo CMYK.svg"
             alt="Fondazione Telethon"
             style={{ height: 64, marginBottom: 8 }}
           />
