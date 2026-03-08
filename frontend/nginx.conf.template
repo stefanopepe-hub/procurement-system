@@ -11,12 +11,20 @@ server {
 
     client_max_body_size 51m;
 
-    # SPA routing — tutte le route non-file vanno a index.html
+    # Serve config.js without cache so runtime API URL is always fresh
+    location = /config.js {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        expires 0;
+        try_files $uri =404;
+    }
+
+    # SPA routing — all non-file routes go to index.html
     location / {
         try_files $uri $uri/ /index.html;
     }
 
-    # Cache asset statici
+    # Cache static assets
     location ~* \.(js|css|png|jpg|jpeg|svg|ico|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";

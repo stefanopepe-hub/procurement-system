@@ -18,7 +18,13 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.environ.get("SECRET_KEY", _DEFAULT_SECRET)
     JWT_SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY", _DEFAULT_SECRET)
 
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80", "https://believable-stillness-production-466d.up.railway.app"]
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:80",
+        "http://localhost",
+        "https://believable-stillness-production-466d.up.railway.app",
+        "https://procurement-system-production-232f.up.railway.app",
+    ]
 
     # Database
     DATABASE_URL: str = "postgresql://procurement:procurement@db:5432/procurement_db"
@@ -38,7 +44,7 @@ class Settings(BaseSettings):
     EMAIL_ALBO_FORNITORI: str = "albofornitori@telethon.it"
 
     # App base URL (used in email survey links)
-    APP_BASE_URL: str = "http://localhost:3000"
+    APP_BASE_URL: str = "https://believable-stillness-production-466d.up.railway.app"
 
     # Alyante Integration
     ALYANTE_API_URL: str = "http://alyante-stub:8001"

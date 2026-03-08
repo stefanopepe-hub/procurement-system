@@ -1,5 +1,3 @@
 // Procurement System – Fondazione Telethon
-// Questo file viene caricato prima dell'app React.
-// In produzione (Railway/Docker) sostituire con il vero URL del backend.
-// In sviluppo locale lasciare vuoto: Vite proxy gestisce /api → localhost:8000
-window.__API_URL__ = '';
+// Backend URL (Railway production)
+window.__API_URL__ = 'https://procurement-system-production-232f.up.railway.app';
