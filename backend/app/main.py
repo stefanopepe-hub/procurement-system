@@ -65,22 +65,28 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 def _auto_seed_if_empty():
-    """Run seed.py once if the database is empty (no users found)."""
-    try:
-        from app.auth.models import User as _User
-        with SessionLocal() as _db:
-            count = _db.query(_User).count()
-        if count == 0:
-            logger.info("Database is empty — running initial seed...")
-            import sys as _sys, os as _os
-            _sys.path.insert(0, "/app")
-            from seed import seed as _seed
-            _seed()
-            logger.info("Auto-seed completed successfully.")
-        else:
-            logger.info(f"Database already has {count} users — skipping seed.")
-    except Exception as _err:
-        logger.error(f"Auto-seed failed (non-blocking): {_err}", exc_info=True)
+    """Run seed.py in a daemon thread if the database is empty.
+    Non-blocking: HTTP server starts immediately, seed runs in background."""
+    import threading
+
+    def _run():
+        try:
+            from app.auth.models import User as _User
+            with SessionLocal() as _db:
+                count = _db.query(_User).count()
+            if count == 0:
+                logger.info("Database empty — running initial seed in background...")
+                import sys as _sys
+                _sys.path.insert(0, "/app")
+                from seed import seed as _seed
+                _seed()
+                logger.info("Auto-seed completed successfully.")
+            else:
+                logger.info(f"Database has {count} users — skipping auto-seed.")
+        except Exception as _err:
+            logger.error(f"Auto-seed failed: {_err}", exc_info=True)
+
+    threading.Thread(target=_run, daemon=True, name="auto-seed").start()
 
 
 @asynccontextmanager
