@@ -539,7 +539,10 @@ const PendingRatingsAlert: React.FC<{
 
   if (loading || total === 0) return null;
 
-  const shown = requests.slice(0, 5);
+  const urgentCount = requests.filter(r => {
+    const daysLeft = r.expires_at ? dayjs(r.expires_at).diff(dayjs(), 'day') : null;
+    return daysLeft !== null && daysLeft <= 7;
+  }).length;
 
   return (
     <Card
@@ -550,103 +553,35 @@ const PendingRatingsAlert: React.FC<{
         borderRadius: 8,
         boxShadow: '0 2px 8px rgba(250,173,20,0.15)',
       }}
-      styles={{ body: { padding: '16px 20px' } }}
+      styles={{ body: { padding: '14px 20px' } }}
     >
-      <Space align="start" style={{ width: '100%' }}>
-        <BellFilled style={{ fontSize: 22, color: '#d48806', marginTop: 2, flexShrink: 0 }} />
-        <div style={{ flex: 1, width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Space>
-              <Typography.Text strong style={{ fontSize: 16, color: '#7c5800' }}>
-                Valutazioni fornitori in attesa
-              </Typography.Text>
-              <Badge
-                count={total}
-                style={{ backgroundColor: '#d48806' }}
-              />
-            </Space>
-            {total > 5 && (
-              <Button
-                type="link"
-                size="small"
-                style={{ color: '#d48806', padding: 0 }}
-                onClick={() => navigate('/vendor-rating')}
-              >
-                Vedi tutte ({total})
-              </Button>
-            )}
-          </div>
-          <List
-            size="small"
-            dataSource={shown}
-            renderItem={(r) => {
-              const daysLeft = r.expires_at
-                ? dayjs(r.expires_at).diff(dayjs(), 'day')
-                : null;
-              const isUrgent = daysLeft !== null && daysLeft <= 7;
-              return (
-                <List.Item
-                  key={r.request_id}
-                  style={{
-                    paddingLeft: 0,
-                    paddingRight: 0,
-                    borderBottom: '1px solid rgba(250,173,20,0.2)',
-                  }}
-                  actions={[
-                    <Button
-                      key="rate"
-                      type="primary"
-                      size="small"
-                      icon={<StarOutlined />}
-                      onClick={() => navigate(`/vendor-rating/supplier/${r.supplier_id}`)}
-                      style={{
-                        background: '#d48806',
-                        borderColor: '#d48806',
-                        fontSize: 12,
-                      }}
-                    >
-                      Valuta ora
-                    </Button>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    title={
-                      <Space size={6}>
-                        <Typography.Text strong style={{ fontSize: 13 }}>
-                          {r.ragione_sociale}
-                        </Typography.Text>
-                        {r.tipo && (
-                          <Tag style={{ fontSize: 10, margin: 0 }}>{r.tipo}</Tag>
-                        )}
-                      </Space>
-                    }
-                    description={
-                      <Space size={12} style={{ fontSize: 11, color: '#7c5800' }}>
-                        <span>
-                          Richiesta il{' '}
-                          {r.requested_at ? dayjs(r.requested_at).format('DD/MM/YYYY') : '—'}
-                        </span>
-                        {daysLeft !== null && (
-                          <span style={{ color: isUrgent ? '#cf1322' : '#d48806', fontWeight: 600 }}>
-                            {isUrgent ? (
-                              <><WarningOutlined /> {daysLeft}gg rimasti (urgente)</>
-                            ) : (
-                              <>{daysLeft}gg rimasti</>
-                            )}
-                          </span>
-                        )}
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              );
-            }}
-          />
-        </div>
-      </Space>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Space size={12}>
+          <BellFilled style={{ fontSize: 20, color: '#d48806' }} />
+          <Typography.Text strong style={{ fontSize: 15, color: '#7c5800' }}>
+            Valutazioni fornitori in attesa
+          </Typography.Text>
+          <Badge count={total} style={{ backgroundColor: '#d48806' }} />
+          {urgentCount > 0 && (
+            <Tag color="error" icon={<WarningOutlined />} style={{ margin: 0 }}>
+              {urgentCount} urgenti
+            </Tag>
+          )}
+        </Space>
+        <Button
+          type="primary"
+          size="small"
+          icon={<StarOutlined />}
+          onClick={() => navigate('/vendor-rating')}
+          style={{ background: '#d48806', borderColor: '#d48806' }}
+        >
+          Gestisci valutazioni
+        </Button>
+      </div>
     </Card>
   );
 };
+
 
 // ─── Main Dashboard ──────────────────────────────────────────────────────────
 
@@ -890,8 +825,8 @@ const Dashboard: React.FC = () => {
             {' · '}Benvenuto, {user?.full_name}
           </Text>
         </div>
-        <img src="/telethon-logo.svg" alt="Fondazione Telethon"
-          style={{ height: 32, filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
+        <img src="/Telethon_logo CMYK.svg" alt="Fondazione Telethon"
+          style={{ height: 52, filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
       </div>
 
       {/* Pending Vendor Ratings Alert — stile Amazon */}
