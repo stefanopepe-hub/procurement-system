@@ -117,8 +117,8 @@ def _auto_seed_if_empty():
             from app.suppliers.models import Supplier as _Supplier
             with SessionLocal() as _db:
                 count = _db.query(_Supplier).count()
-            if count == 0:
-                logger.info("No suppliers found — running initial seed in background...")
+            if count < 10:
+                logger.info(f"Only {count} suppliers — running seed to populate database...")
                 import sys as _sys
                 _sys.path.insert(0, "/app")
                 from seed import seed as _seed
@@ -242,7 +242,7 @@ def admin_check_expiries(current_user=Depends(get_current_active_user)):
     for the next scheduled run.
     """
     from app.auth.models import UserRole
-    if current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
+    if current_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
         from fastapi import HTTPException, status as http_status
         raise HTTPException(
             status_code=http_status.HTTP_403_FORBIDDEN,
@@ -270,7 +270,7 @@ def admin_send_test_email(
 ):
     """Crea una survey di test e invia l'email a pepe@tigem.it (o indirizzo specificato)."""
     from app.auth.models import UserRole
-    if current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
+    if current_user.role not in (UserRole.ADMIN, UserRole.SUPER_ADMIN):
         from fastapi import HTTPException as _HTTPException
         raise _HTTPException(status_code=403, detail="Solo amministratori possono inviare email di test.")
 
@@ -330,7 +330,7 @@ def admin_send_test_email(
 def admin_run_seed(current_user=Depends(get_current_active_user)):
     """Esegue il seed del database (solo super_admin). Sicuro da rieseguire: non duplica dati."""
     from app.auth.models import UserRole
-    if current_user.role != UserRole.SUPERADMIN:
+    if current_user.role != UserRole.SUPER_ADMIN:
         from fastapi import HTTPException as _HTTPException
         raise _HTTPException(status_code=403, detail="Solo super_admin può eseguire il seed.")
     try:
