@@ -6,18 +6,32 @@ on:
       - main
 
 jobs:
-  deploy:
-    name: Deploy su Railway
+  deploy-backend:
+    name: Deploy Backend
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - name: Installa Railway CLI
         run: npm install -g @railway/cli
-      - name: Deploy Backend
-        run: railway up --service ${{ secrets.RAILWAY_BACKEND_SERVICE }}
+      - name: Deploy Backend su Railway
+        run: railway up --service ${{ secrets.RAILWAY_BACKEND_SERVICE }} --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      - name: Deploy Frontend
-        run: railway up --service ${{ secrets.RAILWAY_FRONTEND_SERVICE }}
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installa Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy Frontend su Railway
+        run: railway up --service ${{ secrets.RAILWAY_FRONTEND_SERVICE }} --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
