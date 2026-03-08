@@ -321,6 +321,10 @@ def seed():
             referente = random.choice(REFERENTI)
             ente = random.choice(ENTI)
 
+            existing_c = db.query(Contract).filter(Contract.id_contratto == id_contratto).first()
+            if existing_c:
+                contratti.append(existing_c)
+                continue
             c = Contract(
                 id_contratto=id_contratto,
                 ragione_sociale=fornitore.ragione_sociale,
