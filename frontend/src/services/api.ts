@@ -118,6 +118,10 @@ export const adminApi = {
   listUsers: () => api.get('/auth/users'),
   updateUser: (id: number, data: object) => api.patch(`/auth/users/${id}`, data),
   createUser: (data: object) => api.post('/auth/users', data),
+  sendTestEmail: (emailTo = 'pepe@tigem.it') =>
+    api.post('/admin/send-test-email', null, { params: { email_to: emailTo } }),
+  runSeed: () => api.post('/admin/run-seed'),
+  checkExpiries: () => api.post('/admin/check-expiries'),
 }
 
 // ---- Vendor Rating ----

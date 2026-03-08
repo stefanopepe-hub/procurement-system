@@ -207,6 +207,56 @@ def create_supplier(
     db.commit()
     db.refresh(supplier)
     log_action(db, current_user.id, "CREATE", "supplier", str(supplier.id), {"ragione_sociale": supplier.ragione_sociale})
+
+    # Notifica email al team acquisti per nuovo fornitore iscritto all'Albo
+    try:
+        from app.notifications.email import send_email
+        categorie = ", ".join(supplier.categorie_merceologiche) if supplier.categorie_merceologiche else "N/D"
+        html = f"""<!DOCTYPE html>
+<html lang="it"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0"
+       style="max-width:600px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+  <tr>
+    <td style="background:linear-gradient(135deg,#1a3a5c 0%,#2a5a8c 100%);padding:28px 36px;text-align:center;">
+      <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.6);text-transform:uppercase;margin-bottom:6px;">Fondazione Telethon · Albo Fornitori</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;">Nuovo Fornitore Inserito</div>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:32px 36px;">
+      <p style="font-size:15px;color:#333;margin:0 0 20px;">
+        Un nuovo fornitore è stato aggiunto all'Albo Fornitori da <strong>{current_user.full_name}</strong>.
+      </p>
+      <table width="100%" style="background:#f8faff;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+        <tr><td style="padding:10px 16px;color:#666;font-size:14px;border-bottom:1px solid #eee;">Ragione Sociale</td>
+            <td style="padding:10px 16px;font-weight:700;font-size:14px;border-bottom:1px solid #eee;color:#1a3a5c;">{supplier.ragione_sociale}</td></tr>
+        <tr><td style="padding:10px 16px;color:#666;font-size:14px;border-bottom:1px solid #eee;">Partita IVA</td>
+            <td style="padding:10px 16px;font-size:14px;border-bottom:1px solid #eee;">{supplier.partita_iva or "N/D"}</td></tr>
+        <tr><td style="padding:10px 16px;color:#666;font-size:14px;border-bottom:1px solid #eee;">Categoria</td>
+            <td style="padding:10px 16px;font-size:14px;border-bottom:1px solid #eee;">{categorie}</td></tr>
+        <tr><td style="padding:10px 16px;color:#666;font-size:14px;">Data Iscrizione</td>
+            <td style="padding:10px 16px;font-size:14px;">{supplier.data_iscrizione}</td></tr>
+      </table>
+    </td>
+  </tr>
+  <tr><td style="background:#1a3a5c;padding:16px 36px;text-align:center;">
+    <p style="color:rgba(255,255,255,0.6);font-size:12px;margin:0;">
+      <strong style="color:rgba(255,255,255,0.9);">Fondazione Telethon</strong> · Ufficio Acquisti
+    </p></td></tr>
+</table></td></tr></table>
+</body></html>"""
+        send_email(
+            to=[settings.EMAIL_ALBO_FORNITORI],
+            subject=f"[Albo Fornitori] Nuovo fornitore: {supplier.ragione_sociale}",
+            body_html=html,
+        )
+    except Exception as _e:
+        import logging as _logging
+        _logging.getLogger(__name__).warning(f"Notifica nuovo fornitore non inviata: {_e}")
+
     return SupplierDetail.model_validate(supplier)
 
 

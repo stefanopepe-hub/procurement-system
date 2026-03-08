@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import {
   Typography, Card, Row, Col, Statistic, Table, Tag, Select, Space,
-  Divider, Button, Spin, Alert, message, Tabs, Badge,
+  Divider, Button, Spin, Alert, message, Tabs, Badge, Input,
 } from 'antd'
 import {
   TeamOutlined, FileTextOutlined, FileOutlined, AuditOutlined,
   SafetyCertificateOutlined, UserOutlined, CheckCircleOutlined,
   CloseCircleOutlined, BookOutlined, DeleteOutlined, ArrowRightOutlined,
+  SendOutlined, DatabaseOutlined, LinkOutlined, CopyOutlined, WarningOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -365,6 +366,249 @@ const GdprTab: React.FC = () => {
   )
 }
 
+// ---- UAT / Test Tab ----
+const UatTab: React.FC = () => {
+  const [emailTo, setEmailTo] = useState('pepe@tigem.it')
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailResult, setEmailResult] = useState<any>(null)
+  const [runningSeed, setRunningSeed] = useState(false)
+  const [seedResult, setSeedResult] = useState<string | null>(null)
+  const [checkingExpiries, setCheckingExpiries] = useState(false)
+
+  const handleSendTestEmail = async () => {
+    setSendingEmail(true)
+    setEmailResult(null)
+    try {
+      const res = await adminApi.sendTestEmail(emailTo)
+      setEmailResult(res.data)
+      if (res.data.status === 'sent') {
+        message.success('Email inviata con successo!')
+      } else {
+        message.warning('SMTP non configurato — usa il link survey direttamente')
+      }
+    } catch (err: any) {
+      message.error('Errore: ' + (err.response?.data?.detail || 'Errore sconosciuto'))
+    } finally {
+      setSendingEmail(false)
+    }
+  }
+
+  const handleRunSeed = async () => {
+    setRunningSeed(true)
+    setSeedResult(null)
+    try {
+      const res = await adminApi.runSeed()
+      setSeedResult(res.data.detail || 'Seed completato')
+      message.success('Seed database eseguito con successo!')
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || 'Errore sconosciuto'
+      setSeedResult('Errore: ' + detail)
+      message.error('Errore nel seed: ' + detail)
+    } finally {
+      setRunningSeed(false)
+    }
+  }
+
+  const handleCheckExpiries = async () => {
+    setCheckingExpiries(true)
+    try {
+      await adminApi.checkExpiries()
+      message.success('Verifica scadenze contratti completata')
+    } catch {
+      message.info('Funzione completata (o SMTP non configurato)')
+    } finally {
+      setCheckingExpiries(false)
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => message.success('Copiato!'))
+      .catch(() => message.info('Copia manuale: ' + text))
+  }
+
+  return (
+    <div>
+      <Alert
+        type="info"
+        showIcon
+        message="Pannello UAT — Strumenti per il test dell'applicazione"
+        description="Usa queste funzioni per verificare il funzionamento del sistema prima del Go-Live."
+        style={{ marginBottom: 24, borderRadius: 8 }}
+      />
+
+      <Row gutter={[16, 16]}>
+        {/* Email di Test */}
+        <Col xs={24} lg={12}>
+          <Card
+            title={<><SendOutlined style={{ color: '#1a3a5c', marginRight: 8 }} />Email Vendor Rating – Test</>}
+            style={{ height: '100%' }}
+          >
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              <div>
+                <Text strong style={{ fontSize: 13 }}>Destinatario email di test:</Text>
+                <Input
+                  value={emailTo}
+                  onChange={e => setEmailTo(e.target.value)}
+                  placeholder="pepe@tigem.it"
+                  style={{ marginTop: 6 }}
+                />
+              </div>
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                loading={sendingEmail}
+                onClick={handleSendTestEmail}
+                block
+                style={{ background: '#1a3a5c', borderColor: '#1a3a5c' }}
+              >
+                Invia Email Vendor Rating a {emailTo}
+              </Button>
+
+              {emailResult && (
+                <div style={{ marginTop: 8 }}>
+                  <Alert
+                    type={emailResult.status === 'sent' ? 'success' : 'warning'}
+                    showIcon
+                    message={emailResult.status === 'sent'
+                      ? `Email inviata a ${emailResult.email_to}`
+                      : 'SMTP non configurato — usa il link survey'}
+                    style={{ marginBottom: 12, borderRadius: 8 }}
+                  />
+                  {emailResult.survey_url && (
+                    <div style={{
+                      background: '#f8faff', border: '1px solid #d6e4ff',
+                      borderRadius: 8, padding: '12px 16px',
+                    }}>
+                      <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                        <LinkOutlined style={{ marginRight: 4 }} />Link Survey:
+                      </Text>
+                      <Text style={{ fontSize: 12, wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                        {emailResult.survey_url}
+                      </Text>
+                      <Button
+                        size="small" icon={<CopyOutlined />}
+                        onClick={() => copyToClipboard(emailResult.survey_url)}
+                        style={{ marginTop: 8, width: '100%' }}
+                      >
+                        Copia Link Survey
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Alert
+                type="info"
+                showIcon
+                message="Come funziona"
+                description="Clicca il pulsante per creare una survey di valutazione e inviare l'email. Se SMTP non è configurato, copia il link e aprilo nel browser."
+                style={{ borderRadius: 8, fontSize: 12 }}
+              />
+            </Space>
+          </Card>
+        </Col>
+
+        {/* Seed Database */}
+        <Col xs={24} lg={12}>
+          <Card
+            title={<><DatabaseOutlined style={{ color: '#722ed1', marginRight: 8 }} />Database Seed & Notifiche</>}
+            style={{ height: '100%' }}
+          >
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  Il seed crea dati realistici se non presenti: 20 fornitori, 60 contratti, 120 valutazioni. È idempotente: non duplica dati esistenti.
+                </Text>
+              </div>
+              <Button
+                icon={<DatabaseOutlined />}
+                loading={runningSeed}
+                onClick={handleRunSeed}
+                block
+              >
+                Esegui Seed Database
+              </Button>
+              {seedResult && (
+                <Alert
+                  type={seedResult.startsWith('Errore') ? 'error' : 'success'}
+                  message={seedResult}
+                  showIcon
+                  style={{ borderRadius: 8 }}
+                />
+              )}
+
+              <Divider style={{ margin: '8px 0' }} />
+
+              <div>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  Verifica manualmente le notifiche di scadenza contratti (job automatico alle 07:00).
+                </Text>
+              </div>
+              <Button
+                icon={<WarningOutlined />}
+                loading={checkingExpiries}
+                onClick={handleCheckExpiries}
+                block
+              >
+                Verifica Scadenze Contratti ora
+              </Button>
+            </Space>
+          </Card>
+        </Col>
+
+        {/* Scenari UAT */}
+        <Col xs={24}>
+          <Card title="Scenari UAT – Checklist per il test">
+            {[
+              {
+                num: 1, title: 'Inserimento Nuovo Fornitore',
+                steps: 'Vai in Albo Fornitori → Nuovo Fornitore → Compila il form → Salva. Verifica che il fornitore appaia nella lista.',
+              },
+              {
+                num: 2, title: 'Creazione Contratto',
+                steps: 'Vai in Database Contratti → Nuovo Contratto → Seleziona fornitore → Compila dati → Salva.',
+              },
+              {
+                num: 3, title: 'Invio Richiesta Vendor Rating',
+                steps: 'Vai in Vendor Rating → Nuova Richiesta Valutazione → Seleziona fornitore → Inserisci email → Clicca "Crea Richiesta". Copia il link survey.',
+              },
+              {
+                num: 4, title: 'Ricezione Email Valutazione',
+                steps: 'Usa il pannello UAT (tab corrente) → Inserisci email → Clicca "Invia Email". Apri la casella pepe@tigem.it.',
+              },
+              {
+                num: 5, title: 'Compilazione Rating (Survey)',
+                steps: 'Apri il link survey ricevuto per email. Assegna le stelle ai 3 KPI. Clicca "Invia Valutazione".',
+              },
+              {
+                num: 6, title: 'Aggiornamento Score Fornitore',
+                steps: 'Vai in Vendor Rating → cerca il fornitore valutato → verifica che il semaforo e la media si siano aggiornati.',
+              },
+            ].map(scenario => (
+              <div key={scenario.num} style={{
+                padding: '12px 16px', borderRadius: 8,
+                background: scenario.num % 2 === 0 ? '#f8faff' : '#fff',
+                marginBottom: 8, border: '1px solid #f0f0f0',
+              }}>
+                <Space>
+                  <Tag color="blue" style={{ minWidth: 28, textAlign: 'center' }}>
+                    {scenario.num}
+                  </Tag>
+                  <Text strong>{scenario.title}</Text>
+                </Space>
+                <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 13, paddingLeft: 40 }}>
+                  {scenario.steps}
+                </Text>
+              </div>
+            ))}
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  )
+}
+
 // ---- Stats Cards ----
 const StatsCards: React.FC<{ stats: AdminStats }> = ({ stats }) => (
   <Row gutter={[16, 16]}>
@@ -435,6 +679,15 @@ const AdminPanel: React.FC = () => {
 
   const tabItems = [
     {
+      key: 'uat',
+      label: (
+        <span>
+          <SendOutlined /> UAT & Test
+        </span>
+      ),
+      children: <UatTab />,
+    },
+    {
       key: 'users',
       label: (
         <span>
@@ -490,7 +743,7 @@ const AdminPanel: React.FC = () => {
         </>
       ) : null}
 
-      <Tabs items={tabItems} defaultActiveKey="users" />
+      <Tabs items={tabItems} defaultActiveKey="uat" />
     </div>
   )
 }

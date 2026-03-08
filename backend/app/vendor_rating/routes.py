@@ -625,4 +625,33 @@ def create_rating_request(
     db.add(req)
     db.commit()
     db.refresh(req)
-    return {"id": req.id, "survey_token": token, "survey_url": f"/survey/{token}"}
+
+    survey_url = f"{settings.APP_BASE_URL}/survey/{token}"
+    email_sent = False
+
+    # Invia email al valutatore se l'indirizzo è specificato
+    if data.valutatore_email:
+        supplier = db.query(Supplier).filter(Supplier.id == data.supplier_id).first()
+        ragione_sociale = supplier.ragione_sociale if supplier else str(data.supplier_id)
+        html = build_vendor_rating_survey_email(
+            ragione_sociale=ragione_sociale,
+            protocollo=data.protocollo_ordine or f"REQ-{req.id}",
+            survey_url=survey_url,
+            tipo_trigger=data.tipo_trigger.value if data.tipo_trigger else "",
+            data_ordine=str(data.data_ordine) if data.data_ordine else None,
+        )
+        email_sent = send_email(
+            to=[data.valutatore_email],
+            subject=f"Valuta la fornitura di {ragione_sociale} – Fondazione Telethon",
+            body_html=html,
+        )
+        if email_sent:
+            req.survey_sent_at = datetime.now(timezone.utc)
+            db.commit()
+
+    return {
+        "id": req.id,
+        "survey_token": token,
+        "survey_url": survey_url,
+        "email_sent": email_sent,
+    }

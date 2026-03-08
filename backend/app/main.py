@@ -10,7 +10,7 @@ from slowapi.errors import RateLimitExceeded
 import logging
 
 from app.config import settings
-from app.database import Base, engine
+from app.database import Base, engine, SessionLocal
 from app.auth.routes import router as auth_router, get_current_active_user
 from app.suppliers.routes import router as suppliers_router
 from app.contracts.routes import router as contracts_router
@@ -64,11 +64,31 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 
+def _auto_seed_if_empty():
+    """Run seed.py once if the database is empty (no users found)."""
+    try:
+        from app.auth.models import User as _User
+        with SessionLocal() as _db:
+            count = _db.query(_User).count()
+        if count == 0:
+            logger.info("Database is empty — running initial seed...")
+            import sys as _sys, os as _os
+            _sys.path.insert(0, "/app")
+            from seed import seed as _seed
+            _seed()
+            logger.info("Auto-seed completed successfully.")
+        else:
+            logger.info(f"Database already has {count} users — skipping seed.")
+    except Exception as _err:
+        logger.error(f"Auto-seed failed (non-blocking): {_err}", exc_info=True)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Creating database tables...")
     Base.metadata.create_all(bind=engine)
+    _auto_seed_if_empty()
     logger.info("Starting notification scheduler...")
     start_scheduler()
     yield
@@ -191,3 +211,84 @@ async def alyante_stub_orders(supplier_code: str):
     """Retrocompatibilità: reindirizza al nuovo endpoint /alyante/orders/{supplier_code}"""
     from app.alyante.client import alyante_client
     return await alyante_client.get_orders(supplier_code)
+
+
+@app.post("/api/v1/admin/send-test-email", tags=["admin"])
+def admin_send_test_email(
+    email_to: str = "pepe@tigem.it",
+    current_user=Depends(get_current_active_user),
+):
+    """Crea una survey di test e invia l'email a pepe@tigem.it (o indirizzo specificato)."""
+    from app.auth.models import UserRole
+    if current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(status_code=403, detail="Solo amministratori possono inviare email di test.")
+
+    from app.suppliers.models import Supplier
+    from app.vendor_rating.models import VendorRatingRequest, RatingTriggerType
+    from app.notifications.email import send_email, build_vendor_rating_survey_email
+    from datetime import datetime, timezone, timedelta
+    import secrets
+
+    db = SessionLocal()
+    try:
+        supplier = db.query(Supplier).filter(Supplier.is_active_in_albo == True).first()
+        if not supplier:
+            return {"status": "error", "detail": "Nessun fornitore nel database. Eseguire prima il seed."}
+
+        token = secrets.token_urlsafe(64)
+        expires = datetime.now(timezone.utc) + timedelta(days=30)
+        req = VendorRatingRequest(
+            supplier_id=supplier.id,
+            alyante_order_id=f"TEST-UAT-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            protocollo_ordine="UAT-ORD-2026-001",
+            tipo_trigger=RatingTriggerType.OPR_COMPLETATO,
+            tipo_documento="OPR",
+            valutatore_email=email_to,
+            valutatore_nome="UAT Tester",
+            survey_token=token,
+            survey_expires_at=expires,
+            survey_sent_at=datetime.now(timezone.utc),
+        )
+        db.add(req)
+        db.commit()
+
+        survey_url = f"{settings.APP_BASE_URL}/survey/{token}"
+        html = build_vendor_rating_survey_email(
+            ragione_sociale=supplier.ragione_sociale,
+            protocollo="UAT-ORD-2026-001",
+            survey_url=survey_url,
+            tipo_trigger="opr_completato",
+        )
+        sent = send_email(
+            to=[email_to],
+            subject=f"[UAT] Valuta la fornitura di {supplier.ragione_sociale} – Fondazione Telethon",
+            body_html=html,
+        )
+        return {
+            "status": "sent" if sent else "smtp_not_configured",
+            "survey_url": survey_url,
+            "email_to": email_to,
+            "supplier": supplier.ragione_sociale,
+            "detail": "Email inviata con successo" if sent else "SMTP non configurato — usa il link survey direttamente.",
+        }
+    finally:
+        db.close()
+
+
+@app.post("/api/v1/admin/run-seed", tags=["admin"])
+def admin_run_seed(current_user=Depends(get_current_active_user)):
+    """Esegue il seed del database (solo super_admin). Sicuro da rieseguire: non duplica dati."""
+    from app.auth.models import UserRole
+    if current_user.role != UserRole.SUPERADMIN:
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(status_code=403, detail="Solo super_admin può eseguire il seed.")
+    try:
+        import sys as _sys
+        _sys.path.insert(0, "/app")
+        from seed import seed as _seed
+        _seed()
+        return {"status": "ok", "detail": "Seed completato con successo."}
+    except Exception as e:
+        logger.error(f"admin_run_seed error: {e}", exc_info=True)
+        return {"status": "error", "detail": str(e)}
