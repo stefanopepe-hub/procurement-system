@@ -1,22 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" fill="none">
-  <!-- Red star with arrow (left) -->
-  <polygon points="40,8 46,26 65,26 50,38 56,56 40,44 24,56 30,38 15,26 34,26" fill="#CC2229"/>
-  <rect x="37" y="50" width="6" height="50" fill="#CC2229"/>
-  <polygon points="40,100 32,82 48,82" fill="#CC2229"/>
-
-  <!-- Blue star with arrow (center) -->
-  <polygon points="68,4 74,22 93,22 78,34 84,52 68,40 52,52 58,34 43,22 62,22" fill="#1D4FA0"/>
-  <rect x="65" y="46" width="6" height="54" fill="#1D4FA0"/>
-  <polygon points="68,100 60,82 76,82" fill="#1D4FA0"/>
-
-  <!-- Green star with arrow (right) -->
-  <polygon points="96,8 102,26 121,26 106,38 112,56 96,44 80,56 86,38 71,26 90,26" fill="#2E8B3A"/>
-  <rect x="93" y="50" width="6" height="50" fill="#2E8B3A"/>
-  <polygon points="96,100 88,82 104,82" fill="#2E8B3A"/>
-
-  <!-- FONDAZIONE text (uppercase, spaced) -->
-  <text x="138" y="45" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#1D4FA0" letter-spacing="4">FONDAZIONE</text>
-
-  <!-- Telethon bold italic text -->
-  <text x="135" y="100" font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="900" font-style="italic" fill="#1D4FA0">Telethon</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" fill="none">
+  <!-- Cuore Telethon (simbolo ufficiale) -->
+  <path d="M28 42 C28 42 12 32 12 22 C12 16 16.5 12 22 12 C24.8 12 27.3 13.2 29 15.1 C30.7 13.2 33.2 12 36 12 C41.5 12 46 16 46 22 C46 32 30 42 28 42Z" fill="#E31837"/>
+  <!-- Testo TELETHON -->
+  <text x="56" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="18" fill="#1a3a5c" letter-spacing="1">TELETHON</text>
+  <!-- Sottotitolo FONDAZIONE -->
+  <text x="56" y="44" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="9" fill="#555" letter-spacing="2">FONDAZIONE</text>
+  <!-- Linea decorativa rossa -->
+  <rect x="56" y="48" width="120" height="1.5" fill="#E31837" rx="1"/>
 </svg>

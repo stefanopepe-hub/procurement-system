@@ -64,25 +64,68 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 
+_ADMIN_USERNAME = "admin"
+_ADMIN_PASSWORD = "Admin2024!Telethon"
+_ADMIN_EMAIL    = "admin@telethon.it"
+_ADMIN_FULLNAME = "Super Amministratore"
+
+
+def _ensure_admin_ready():
+    """Ensure the super_admin user exists with correct credentials and is unlocked.
+    Runs synchronously at startup before the HTTP server accepts requests.
+    Safe to call on every restart."""
+    try:
+        from app.auth.models import User as _User, UserRole as _Role
+        from app.auth.utils import get_password_hash as _hash
+        from datetime import datetime, timezone
+
+        with SessionLocal() as _db:
+            existing = _db.query(_User).filter(_User.username == _ADMIN_USERNAME).first()
+            if existing:
+                # Always unlock and update password to the required value
+                existing.hashed_password = _hash(_ADMIN_PASSWORD)
+                existing.is_active = True
+                existing.failed_login_attempts = 0
+                existing.locked_until = None
+                existing.role = _Role.SUPER_ADMIN
+                existing.email = _ADMIN_EMAIL
+                _db.commit()
+                logger.info("Super admin account reset and unlocked.")
+            else:
+                _db.add(_User(
+                    username=_ADMIN_USERNAME,
+                    email=_ADMIN_EMAIL,
+                    full_name=_ADMIN_FULLNAME,
+                    hashed_password=_hash(_ADMIN_PASSWORD),
+                    role=_Role.SUPER_ADMIN,
+                    is_active=True,
+                    failed_login_attempts=0,
+                ))
+                _db.commit()
+                logger.info("Super admin account created.")
+    except Exception as _err:
+        logger.error(f"_ensure_admin_ready failed: {_err}", exc_info=True)
+
+
 def _auto_seed_if_empty():
-    """Run seed.py in a daemon thread if the database is empty.
+    """Run seed.py in a daemon thread if there are no suppliers yet.
     Non-blocking: HTTP server starts immediately, seed runs in background."""
     import threading
 
     def _run():
         try:
-            from app.auth.models import User as _User
+            from app.suppliers.models import Supplier as _Supplier
             with SessionLocal() as _db:
-                count = _db.query(_User).count()
+                count = _db.query(_Supplier).count()
             if count == 0:
-                logger.info("Database empty — running initial seed in background...")
+                logger.info("No suppliers found — running initial seed in background...")
                 import sys as _sys
                 _sys.path.insert(0, "/app")
                 from seed import seed as _seed
                 _seed()
                 logger.info("Auto-seed completed successfully.")
             else:
-                logger.info(f"Database has {count} users — skipping auto-seed.")
+                logger.info(f"Database has {count} suppliers — skipping auto-seed.")
         except Exception as _err:
             logger.error(f"Auto-seed failed: {_err}", exc_info=True)
 
@@ -94,7 +137,8 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Creating database tables...")
     Base.metadata.create_all(bind=engine)
-    _auto_seed_if_empty()
+    _ensure_admin_ready()   # Always runs — guarantees admin login works
+    _auto_seed_if_empty()   # Runs only if suppliers table is empty
     logger.info("Starting notification scheduler...")
     start_scheduler()
     yield
