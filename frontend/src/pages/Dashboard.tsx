@@ -721,14 +721,11 @@ const Dashboard: React.FC = () => {
       const expiringContracts =
         expiringContRes.status === 'fulfilled' ? (expiringContRes.value.data?.total ?? 0) : 0;
 
-      // Pending ratings: vendor rating requests not yet completed
-      // We use the dashboard total as a proxy (all rated suppliers)
+      // Pending ratings: from pendingCount endpoint
       let pendingRatings = 0;
       try {
-        const ratingRes = await vendorRatingApi.dashboard({ page: 1, page_size: 1 });
-        // We don't have a direct pending count; use 0 as baseline
-        pendingRatings = 0;
-        void ratingRes;
+        const ratingRes = await vendorRatingApi.pendingCount();
+        pendingRatings = ratingRes.data?.pending ?? 0;
       } catch {
         // silently ignore
       }
@@ -878,7 +875,24 @@ const Dashboard: React.FC = () => {
 
   return (
     <div>
-      <Title level={3} style={{ marginBottom: 24 }}>Dashboard</Title>
+      {/* Header banner Telethon */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a3a5c 0%, #2a5a8c 100%)',
+        borderRadius: 14, padding: '20px 28px', marginBottom: 24,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div>
+          <Title level={4} style={{ color: '#fff', margin: 0 }}>
+            Sistema Procurement — Fondazione Telethon
+          </Title>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
+            {dayjs().format('dddd D MMMM YYYY').charAt(0).toUpperCase() + dayjs().format('dddd D MMMM YYYY').slice(1)}
+            {' · '}Benvenuto, {user?.full_name}
+          </Text>
+        </div>
+        <img src="/telethon-logo.svg" alt="Fondazione Telethon"
+          style={{ height: 32, filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
+      </div>
 
       {/* Pending Vendor Ratings Alert — stile Amazon */}
       {adminUser && (

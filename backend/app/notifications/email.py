@@ -106,42 +106,142 @@ def build_vendor_rating_survey_email(
     data_ordine: str = None,
 ) -> str:
     trigger_labels = {
-        "ddt_beni": "registrazione DDT",
+        "ddt_beni": "registrazione DDT beni",
         "ft_beni_osd": "registrazione fattura",
         "opr_completato": "completamento ordine previsionale",
     }
     evento = trigger_labels.get(tipo_trigger, "evento ordine")
-    data_info = f"<p><strong>Data ordine:</strong> {data_ordine}</p>" if data_ordine else ""
-    return f"""
-    <html>
-    <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:#1677ff;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center;">
-      <h2 style="margin:0;">Fondazione Telethon</h2>
-      <p style="margin:4px 0 0;opacity:.85;">Valutazione Fornitura</p>
-    </div>
-    <div style="border:1px solid #e8e8e8;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-      <p>Gentile Collega,</p>
-      <p>A seguito della <strong>{evento}</strong> per il fornitore
-         <strong>{ragione_sociale}</strong>
-         (Rif. ordine: <strong>{protocollo}</strong>),
-         ti chiediamo di dedicare 2 minuti alla valutazione della fornitura.
+    data_row = f"""
+        <tr>
+          <td style="padding:6px 12px;color:#666;font-size:14px;border-bottom:1px solid #eee;">Data ordine</td>
+          <td style="padding:6px 12px;font-weight:600;font-size:14px;border-bottom:1px solid #eee;">{data_ordine}</td>
+        </tr>""" if data_ordine else ""
+
+    return f"""<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 16px;">
+<tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0"
+       style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;
+              overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+
+  <!-- Header gradient Telethon -->
+  <tr>
+    <td style="background:linear-gradient(135deg,#1a3a5c 0%,#c0392b 100%);
+               padding:36px 40px;text-align:center;">
+      <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.6);
+                  text-transform:uppercase;margin-bottom:8px;">Fondazione Telethon</div>
+      <div style="font-size:26px;font-weight:800;color:#ffffff;margin-bottom:4px;">
+        Valutazione Fornitura
+      </div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.75);">
+        Ufficio Acquisti · Sistema Procurement
+      </div>
+    </td>
+  </tr>
+
+  <!-- Corpo -->
+  <tr>
+    <td style="padding:36px 40px;">
+      <p style="font-size:16px;color:#1a3a5c;font-weight:600;margin:0 0 6px;">Gentile Collega,</p>
+      <p style="font-size:15px;color:#555;line-height:1.65;margin:0 0 24px;">
+        A seguito della <strong style="color:#1a3a5c;">{evento}</strong> per il fornitore
+        <strong style="color:#1a3a5c;">{ragione_sociale}</strong>,
+        ti chiediamo di dedicare <strong>2 minuti</strong> per valutare la qualità della fornitura.
       </p>
-      {data_info}
-      <p>Le tue valutazioni ci aiutano a monitorare la qualità dei nostri fornitori.</p>
-      <div style="text-align:center;margin:32px 0;">
+
+      <!-- Info ordine -->
+      <table cellpadding="0" cellspacing="0" width="100%"
+             style="background:#f8faff;border-radius:10px;margin-bottom:28px;overflow:hidden;">
+        <tr>
+          <td style="padding:6px 12px;color:#666;font-size:14px;border-bottom:1px solid #eee;">Fornitore</td>
+          <td style="padding:6px 12px;font-weight:700;font-size:14px;border-bottom:1px solid #eee;
+                     color:#1a3a5c;">{ragione_sociale}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 12px;color:#666;font-size:14px;border-bottom:1px solid #eee;">Rif. ordine</td>
+          <td style="padding:6px 12px;font-weight:600;font-size:14px;border-bottom:1px solid #eee;">
+            {protocollo}</td>
+        </tr>
+        {data_row}
+      </table>
+
+      <!-- 3 KPI da valutare -->
+      <p style="font-size:12px;font-weight:700;color:#1a3a5c;letter-spacing:2px;
+                text-transform:uppercase;margin:0 0 14px;">Criteri di valutazione (1–5 stelle)</p>
+
+      <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
+        <tr>
+          <td style="padding:12px 16px;background:#f0f4ff;border-radius:8px;margin-bottom:8px;">
+            <span style="font-size:20px;">⭐</span>
+            <strong style="font-size:14px;color:#1a3a5c;vertical-align:middle;">
+              KPI 1 — Qualità della fornitura
+            </strong><br>
+            <span style="font-size:13px;color:#777;padding-left:28px;">
+              Conformità e qualità di prodotti/servizi ricevuti
+            </span>
+          </td>
+        </tr>
+        <tr><td style="height:8px;"></td></tr>
+        <tr>
+          <td style="padding:12px 16px;background:#f0f4ff;border-radius:8px;">
+            <span style="font-size:20px;">⏱</span>
+            <strong style="font-size:14px;color:#1a3a5c;vertical-align:middle;">
+              KPI 2 — Rispetto delle tempistiche di consegna
+            </strong><br>
+            <span style="font-size:13px;color:#777;padding-left:28px;">
+              Puntualità rispetto alle date concordate
+            </span>
+          </td>
+        </tr>
+        <tr><td style="height:8px;"></td></tr>
+        <tr>
+          <td style="padding:12px 16px;background:#f0f4ff;border-radius:8px;">
+            <span style="font-size:20px;">💬</span>
+            <strong style="font-size:14px;color:#1a3a5c;vertical-align:middle;">
+              KPI 3 — Comunicazione e supporto del fornitore
+            </strong><br>
+            <span style="font-size:13px;color:#777;padding-left:28px;">
+              Disponibilità e chiarezza nella gestione della fornitura
+            </span>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin:0 0 28px;">
         <a href="{survey_url}"
-           style="display:inline-block;padding:14px 32px;background:#52c41a;color:#fff;
-                  border-radius:6px;text-decoration:none;font-size:16px;font-weight:bold;">
-          ⭐ Valuta la fornitura
+           style="display:inline-block;padding:18px 48px;
+                  background:#1a3a5c;color:#ffffff;
+                  border-radius:12px;text-decoration:none;
+                  font-size:17px;font-weight:700;letter-spacing:0.3px;">
+          ⭐&nbsp;&nbsp;Lascia la tua valutazione
         </a>
       </div>
-      <p style="font-size:12px;color:#888;">
-        Il link è personale e scadrà dopo 30 giorni dall'invio.<br>
-        In caso di difficoltà contatta: <a href="mailto:{settings.EMAIL_ALBO_FORNITORI}">{settings.EMAIL_ALBO_FORNITORI}</a>
+
+      <p style="font-size:13px;color:#999;text-align:center;line-height:1.7;margin:0;">
+        Il link è <strong>personale</strong> e scadrà dopo <strong>30 giorni</strong>.<br>
+        Difficoltà? Scrivi a:
+        <a href="mailto:{settings.EMAIL_ALBO_FORNITORI}" style="color:#1a3a5c;font-weight:600;">
+          {settings.EMAIL_ALBO_FORNITORI}
+        </a>
       </p>
-    </div>
-    <p style="font-size:11px;color:#bbb;text-align:center;margin-top:12px;">
-      Fondazione Telethon – Ufficio Acquisti
-    </p>
-    </body></html>
-    """
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background:#1a3a5c;padding:20px 40px;text-align:center;">
+      <p style="color:rgba(255,255,255,0.6);font-size:12px;margin:0;line-height:1.6;">
+        <strong style="color:rgba(255,255,255,0.9);">Fondazione Telethon</strong> · Ufficio Acquisti<br>
+        I dati sono trattati nel rispetto del GDPR – Reg. UE 2016/679
+      </p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>"""

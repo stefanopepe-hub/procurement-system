@@ -76,6 +76,29 @@ services:
     networks:
       - internal
 
+  # ── PostgreSQL Backup automatico ────────────────────────────────────────────
+  # Backup giornaliero alle 02:00, mantiene 7gg / 4 settimane / 3 mesi
+  # I backup vengono salvati nella cartella ./backups/ sull'host
+  db-backup:
+    image: prodrigestivill/postgres-backup-local:16
+    restart: always
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: procurement_db
+      POSTGRES_USER: procurement
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_in_production}
+      SCHEDULE: "0 2 * * *"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 3
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
 volumes:
   postgres_data:
   uploads:

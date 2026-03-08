@@ -144,31 +144,24 @@ export const SupplierRatingDetail: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: 'K1 Prezzo',
+      title: '⭐ K1 Qualità',
       dataIndex: 'kpi1_qualita_prezzo',
       key: 'k1',
-      width: 110,
+      width: 120,
       render: (v) => <StarDisplay value={v} />,
     },
     {
-      title: 'K2 Relaz.',
+      title: '⏱ K2 Tempi',
       dataIndex: 'kpi2_qualita_relazionale',
       key: 'k2',
-      width: 110,
+      width: 120,
       render: (v) => <StarDisplay value={v} />,
     },
     {
-      title: 'K3 Tecnica',
+      title: '💬 K3 Comunic.',
       dataIndex: 'kpi3_qualita_tecnica',
       key: 'k3',
-      width: 110,
-      render: (v) => <StarDisplay value={v} />,
-    },
-    {
-      title: 'K4 Tempi',
-      dataIndex: 'kpi4_affidabilita_tempi',
-      key: 'k4',
-      width: 110,
+      width: 130,
       render: (v) => <StarDisplay value={v} />,
     },
     {
@@ -341,12 +334,11 @@ export const SupplierRatingDetail: React.FC = () => {
           <Divider />
           <Row gutter={16}>
             {[
-              { label: 'Prezzo/Fornitura', value: summary.media_kpi1 },
-              { label: 'Relazionale', value: summary.media_kpi2 },
-              { label: 'Tecnica', value: summary.media_kpi3 },
-              { label: 'Tempi', value: summary.media_kpi4 },
-              { label: 'Puntualità', value: summary.media_kpi5_score },
-              { label: 'Precisione', value: summary.media_kpi6_score },
+              { label: '⭐ Qualità fornitura', value: summary.media_kpi1 },
+              { label: '⏱ Tempistiche', value: summary.media_kpi2 },
+              { label: '💬 Comunicazione', value: summary.media_kpi3 },
+              { label: '🚀 Puntualità auto', value: summary.media_kpi5_score },
+              { label: '📦 Precisione auto', value: summary.media_kpi6_score },
             ].map((kpi, i) => (
               <Col key={i} xs={12} md={4}>
                 <Text type="secondary" style={{ fontSize: 12 }}>{kpi.label}</Text>
@@ -354,7 +346,7 @@ export const SupplierRatingDetail: React.FC = () => {
               </Col>
             ))}
             <Col xs={12} md={4}>
-              <Text type="secondary" style={{ fontSize: 12 }}>NC medie</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>⚠️ NC medie</Text>
               <div>
                 <Text>{summary.media_kpi7_nc !== null ? summary.media_kpi7_nc?.toFixed(1) : '—'}</Text>
               </div>

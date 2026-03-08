@@ -555,8 +555,11 @@ def seed():
         # ── 7. SURVEY APERTE (per testare il flusso) ────────────────────────
         print("\n[5] Creazione survey aperte per test flusso email...")
         survey_count = 0
-        for fornitore in random.sample(fornitori, min(8, len(fornitori))):
-            for k in range(random.randint(1, 3)):
+        open_tokens = []
+
+        # Survey generiche per beta.tester
+        for fornitore in random.sample(fornitori, min(6, len(fornitori))):
+            for k in range(random.randint(1, 2)):
                 token = secrets.token_urlsafe(64)
                 req = VendorRatingRequest(
                     supplier_id=fornitore.id,
@@ -578,8 +581,41 @@ def seed():
                 db.add(req)
                 survey_count += 1
 
+        # ── UAT: survey specifica per pepe@tigem.it ──────────────────────────
+        uat_fornitore = fornitori[0]  # Acme Informatica SRL
+        uat_token = secrets.token_urlsafe(64)
+        uat_req = VendorRatingRequest(
+            supplier_id=uat_fornitore.id,
+            alyante_order_id="UAT-PEPE-001",
+            protocollo_ordine="UAT-ORD-2026-001",
+            tipo_trigger=RatingTriggerType.OPR_COMPLETATO,
+            tipo_documento="OPR",
+            data_ordine=date.today() - timedelta(days=5),
+            data_registrazione=date.today() - timedelta(days=2),
+            data_consegna_richiesta=date.today() - timedelta(days=3),
+            data_consegna_ricevuta=date.today() - timedelta(days=2),
+            quantita_richiesta=Decimal("100"),
+            quantita_ricevuta=Decimal("98"),
+            cdc_commessa="CDC001",
+            responsabile="Giuseppe Pepe",
+            valutatore_email="pepe@tigem.it",
+            valutatore_nome="Giuseppe Pepe",
+            survey_token=uat_token,
+            survey_expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            survey_sent_at=datetime.now(timezone.utc),
+            survey_expired=False,
+        )
+        db.add(uat_req)
+        open_tokens.append({
+            "token": uat_token,
+            "fornitore": uat_fornitore.ragione_sociale,
+            "email": "pepe@tigem.it",
+        })
+        survey_count += 1
+
         db.commit()
-        print(f"  ✓ {survey_count} survey aperte per test")
+        print(f"  ✓ {survey_count} survey aperte create")
+        print(f"  ✓ 1 survey UAT creata per pepe@tigem.it → {uat_fornitore.ragione_sociale}")
 
         # ── RIEPILOGO ─────────────────────────────────────────────────────────
         print("\n" + "=" * 60)
@@ -615,7 +651,17 @@ def seed():
         print(f"\n⚠️  Contratti urgenti (scadenza < 30gg): 8 contratti")
         print(f"⚠️  Contratti in attenzione (30-60gg):   7 contratti")
 
-        print(f"\n✅ Piattaforma pronta per il beta test!")
+        # Stampa URL survey UAT
+        app_url = os.environ.get("APP_BASE_URL", "http://localhost:80")
+        print(f"\n🔗 URL SURVEY UAT (da aprire nel browser):")
+        for t in open_tokens:
+            survey_url = f"{app_url}/survey/{t['token']}"
+            print(f"   Fornitore: {t['fornitore']}")
+            print(f"   Email:     {t['email']}")
+            print(f"   URL:       {survey_url}")
+            print()
+
+        print(f"✅ Piattaforma pronta per il beta test!")
         print("=" * 60)
 
     except Exception as e:
